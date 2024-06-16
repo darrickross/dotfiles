@@ -123,4 +123,4 @@ if ! shopt -oq posix; then
 fi
 
 # Set Python 3 as default
-python=python3
+export python=python3
