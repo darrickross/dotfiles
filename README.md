@@ -36,7 +36,7 @@ cd $HOME/dotfiles
 Automagically install the dotfiles into the home directory. If it runs into conflicting files which already exist it asks you if you want to back them up. Backing up will `mv $file $file.bak`
 
 ```bash
-./install
+./install.sh
 ```
 
 ### Manual
