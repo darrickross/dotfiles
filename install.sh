@@ -26,7 +26,9 @@ if [[ ${#conflicting_files[@]} -gt 0 ]]; then
         echo "$file"
     done
 
-    read -p "Do you want to backup these files? (Y/N): " -n 1 -r
+    echo "Do you want to archive these files?"
+    echo "--> mv file file.bak"
+    read -p "(Y/N): " -r
     echo
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         backup_files "${conflicting_files[@]}"
