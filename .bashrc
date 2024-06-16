@@ -1,3 +1,6 @@
+# shellcheck disable=SC2148
+# Ignore the need for script to start with '#!/bin/bash' or similar
+#
 # ~/.bashrc: executed by bash(1) for non-login shells.
 # see /usr/share/doc/bash/examples/startup-files (in the package bash-doc)
 # for examples
