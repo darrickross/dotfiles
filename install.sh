@@ -18,7 +18,7 @@ backup_files() {
 }
 
 # Find files that would conflict with stow
-mapfile -t conflicting_files < <(stow -n -v 2 . | grep "existing target is" | awk '{print $NF}')
+mapfile -t conflicting_files < <(stow -n -v 2 . 2>&1 | grep "CONFLICT" | grep "existing target is" | awk '{print $NF}')
 
 if [[ ${#conflicting_files[@]} -gt 0 ]]; then
     echo "The following files will conflict with stow:"
