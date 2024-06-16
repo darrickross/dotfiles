@@ -115,4 +115,5 @@ if ! shopt -oq posix; then
     fi
 fi
 
+# Set Python 3 as default
 python=python3
