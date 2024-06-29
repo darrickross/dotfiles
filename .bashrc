@@ -123,7 +123,7 @@ if ! shopt -oq posix; then
 fi
 
 # Set Python 3 as default
-export python=python3
+alias python='python3'
 
 # Custom prompt
 # [HH:MM:SS][ExitCode][Hostname]@Username:WorkingDirectory$_
