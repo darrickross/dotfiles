@@ -3,5 +3,10 @@
         "Automagic",
         "Automagically",
         "dotfiles"
-    ]
+    ],
+    // Associate .stow-local-ignore files with the ignore language
+    // As its basically the same thing but for stow instead of git
+    "files.associations": {
+        ".stow-local-ignore": "ignore"
+    }
 }
