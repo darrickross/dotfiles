@@ -1,4 +1,12 @@
+# Files to ignore in stows operation
+# AKA any file or folder which is not a dotfile or config file your saving
+
+# Git related
 .git
+
+# VSCode related
 .vscode/*
+
+# Install script
 install.sh
 README.md
