@@ -4,6 +4,7 @@
     "yahyabatulu.vscode-markdown-alert",
     "oderwat.indent-rainbow",
     "streetsidesoftware.code-spell-checker",
-    "foxundermoon.shell-format"
+    "foxundermoon.shell-format",
+    "timonwong.shellcheck"
   ]
 }
