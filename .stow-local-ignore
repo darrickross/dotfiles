@@ -11,6 +11,3 @@ LICENSE
 
 # VSCode related
 .vscode/*
-
-# Install script
-install.sh
