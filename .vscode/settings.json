@@ -8,5 +8,9 @@
   // As its basically the same thing but for stow instead of git
   "files.associations": {
     ".stow-local-ignore": "ignore"
+  },
+  "[jsonc]": {
+    "editor.tabSize": 2,
+    "editor.insertSpaces": true
   }
 }
