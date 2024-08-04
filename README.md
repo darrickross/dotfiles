@@ -9,13 +9,13 @@ Ensure you have the following installed on your system
 1. `git`
 2. `stow`
 
-### apt - package manager
+### `apt` - package manager
 
 ```bash
 sudo apt install git stow
 ```
 
-### dnf - package manager
+### `dnf` - package manager
 
 ```bash
 sudo dnf install git stow
