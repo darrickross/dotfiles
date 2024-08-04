@@ -3,10 +3,14 @@
 
 # Git related
 .git
+.gitignore
+
+# Git Repo related
+README.md
+LICENSE
 
 # VSCode related
 .vscode/*
 
 # Install script
 install.sh
-README.md
