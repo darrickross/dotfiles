@@ -1,5 +1,6 @@
 {
   "recommendations": [
+    "davidanson.vscode-markdownlint",
     "yahyabatulu.vscode-markdown-alert",
     "oderwat.indent-rainbow",
     "streetsidesoftware.code-spell-checker"

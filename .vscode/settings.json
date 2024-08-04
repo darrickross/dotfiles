@@ -12,5 +12,10 @@
   "[jsonc]": {
     "editor.tabSize": 2,
     "editor.insertSpaces": true
+  },
+  "[markdown]": {
+    "editor.tabSize": 2,
+    "editor.insertSpaces": true,
+    "editor.defaultFormatter": "DavidAnson.vscode-markdownlint"
   }
 }
