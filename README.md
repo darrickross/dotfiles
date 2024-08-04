@@ -6,16 +6,19 @@ A collection of dotfiles located at or below a users home directory. This allows
 
 Ensure you have the following installed on your system
 
-### Git
+1. `git`
+2. `stow`
+
+### apt - package manager
 
 ```bash
-sudo apt install git
+sudo apt install git stow
 ```
 
-### Stow
+### dnf - package manager
 
 ```bash
-sudo apt install stow
+sudo dnf install git stow
 ```
 
 ## Check out repo
