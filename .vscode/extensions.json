@@ -7,6 +7,7 @@
     "foxundermoon.shell-format",
     "timonwong.shellcheck",
     "shardulm94.trailing-spaces",
-    "tamasfe.even-better-toml"
+    "tamasfe.even-better-toml",
+    "brunnerh.insert-unicode"
   ]
 }
