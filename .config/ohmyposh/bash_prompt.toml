@@ -11,6 +11,7 @@
 #   see https://github.com/JanDeDobbeleer/oh-my-posh/discussions/3490
 #
 # - Bash does not support transient prompt
+# - Bash does not support rprompt
 # ==============================================================================
 
 console_title_template = '{{ .Shell }} in {{ .Folder }}'
