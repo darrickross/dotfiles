@@ -34,6 +34,19 @@ version                = 2
     [blocks.segments.properties]
       style = 'full'
 
+  [[blocks.segments]]
+    type  = 'git'
+    style = 'plain'
+
+    background = 'p:git_bg'
+    foreground = 'p:git_fg'
+
+    template = ' <p:git_branch_fg>{{ .HEAD }}</><p:git_changes_fg>{{ if or (.Working.Changed) (.Staging.Changed) }} *{{ end }}</><p:git_behind_fg>{{ if gt .Behind 0 }} ⇣{{ end }}</><p:git_ahead_fg>{{ if gt .Ahead 0 }} ⇡{{ end }}</>'
+
+    [blocks.segments.properties]
+      fetch_status = true
+      branch_icon  = ' ' # This character is a git branch icon
+
 # ==============================================================================
 # Prompt line
 # ==============================================================================
@@ -60,6 +73,13 @@ version                = 2
 [palette]
   file_path_bg = "transparent"
   file_path_fg = "blue"
+
+  git_ahead_fg   = "green"
+  git_behind_fg  = "red"
+  git_bg         = "transparent"
+  git_branch_bg  = "magenta"
+  git_branch_fg  = "yellow"
+  git_changes_fg = "red"
 
   prompt_err_bg = "transparent"
   prompt_err_fg = "red"
