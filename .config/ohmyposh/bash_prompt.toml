@@ -60,6 +60,18 @@ version                = 2
       fetch_status = true
       branch_icon  = ' ' # This character is a git branch icon
 
+  [[blocks.segments]]
+    type       = "executiontime"
+    style      = "plain"
+    background = "p:execution_time_bg"
+    foreground = "p:execution_time_fg"
+    template   = " {{ .FormattedMs }} "
+
+    [blocks.segments.properties]
+      threshold      = 5000
+      style          = "round"
+      always_enabled = false
+
 # ==============================================================================
 # Prompt line
 # ==============================================================================
@@ -84,6 +96,9 @@ version                = 2
     ]
 
 [palette]
+  execution_time_bg = "transparent"
+  execution_time_fg = "red"
+
   file_path_bg = "transparent"
   file_path_fg = "blue"
 
