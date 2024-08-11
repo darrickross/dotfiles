@@ -48,24 +48,23 @@ version                = 2
     template = '❯'
 
     background_templates = [
-      "{{if gt .Code 0}}p:err_prompt_bg{{end}}",
-      "{{if eq .Code 0}}p:ok_prompt_bg{{end}}",
+      "{{if gt .Code 0}}p:prompt_err_bg{{end}}",
+      "{{if eq .Code 0}}p:prompt_ok_bg{{end}}",
     ]
 
     foreground_templates = [
-      "{{if gt .Code 0}}p:err_prompt_fg{{end}}",
-      "{{if eq .Code 0}}p:ok_prompt_fg{{end}}",
+      "{{if gt .Code 0}}p:prompt_err_fg{{end}}",
+      "{{if eq .Code 0}}p:prompt_ok_fg{{end}}",
     ]
 
 [palette]
   file_path_bg = "transparent"
   file_path_fg = "blue"
 
-  ok_prompt_bg = "transparent"
-  ok_prompt_fg = "green"
-
-  err_prompt_bg = "transparent"
-  err_prompt_fg = "red"
+  prompt_err_bg = "transparent"
+  prompt_err_fg = "red"
+  prompt_ok_bg  = "transparent"
+  prompt_ok_fg  = "green"
 
   blue    = "blue"
   magenta = "magenta"
