@@ -29,6 +29,15 @@ version                = 2
   alignment = 'left'
 
   [[blocks.segments]]
+    type       = "time"
+    style      = "plain"
+    background = "p:time_bg"
+    foreground = "p:time_fg"
+
+    [blocks.segments.properties]
+      time_format = "15:04:05"
+
+  [[blocks.segments]]
     type       = 'path'
     style      = 'plain'
     background = 'p:file_path_bg'
@@ -88,3 +97,6 @@ version                = 2
   prompt_err_fg = "red"
   prompt_ok_bg  = "transparent"
   prompt_ok_fg  = "green"
+
+  time_bg = "transparent"
+  time_fg = "green"
