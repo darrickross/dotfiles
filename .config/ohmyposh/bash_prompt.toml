@@ -81,7 +81,6 @@ version                = 2
   git_ahead_fg   = "green"
   git_behind_fg  = "red"
   git_bg         = "transparent"
-  git_branch_bg  = "magenta"
   git_branch_fg  = "yellow"
   git_changes_fg = "red"
 
@@ -89,6 +88,3 @@ version                = 2
   prompt_err_fg = "red"
   prompt_ok_bg  = "transparent"
   prompt_ok_fg  = "green"
-
-  blue    = "blue"
-  magenta = "magenta"
