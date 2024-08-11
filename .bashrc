@@ -130,7 +130,7 @@ alias python='python3'
 if oh-my-posh --version >/dev/null 2>&1; then
 
     # Use oh-my-posh
-    eval "$(oh-my-posh init bash --config ~/.config/ohmyposh/prompt.toml)"
+    eval "$(oh-my-posh init bash --config ~/.config/ohmyposh/bash_prompt.toml)"
 
 else
     cat <<-HEREDOC
