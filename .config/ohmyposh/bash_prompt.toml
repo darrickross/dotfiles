@@ -29,6 +29,7 @@ version                = 2
   alignment = 'left'
 
   [[blocks.segments]]
+    # https://ohmyposh.dev/docs/segments/system/time
     type       = "time"
     style      = "plain"
     background = "p:time_bg"
@@ -38,6 +39,7 @@ version                = 2
       time_format = "15:04:05"
 
   [[blocks.segments]]
+    # https://ohmyposh.dev/docs/segments/system/path
     type       = 'path'
     style      = 'plain'
     background = 'p:file_path_bg'
@@ -48,6 +50,7 @@ version                = 2
       style = 'full'
 
   [[blocks.segments]]
+    # https://ohmyposh.dev/docs/segments/scm/git
     type  = 'git'
     style = 'plain'
 
@@ -61,6 +64,7 @@ version                = 2
       branch_icon  = ' ' # This character is a git branch icon
 
   [[blocks.segments]]
+    # https://ohmyposh.dev/docs/segments/system/executiontime
     type       = "executiontime"
     style      = "plain"
     background = "p:execution_time_bg"
@@ -81,6 +85,7 @@ version                = 2
   newline   = true
 
   [[blocks.segments]]
+    # https://ohmyposh.dev/docs/segments/system/text
     type     = 'text'
     style    = 'plain'
     template = '❯'
@@ -96,6 +101,7 @@ version                = 2
     ]
 
 [palette]
+  # https://ohmyposh.dev/docs/configuration/colors
   execution_time_bg = "transparent"
   execution_time_fg = "red"
 
