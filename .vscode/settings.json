@@ -12,7 +12,7 @@
   "evenBetterToml.formatter.indentEntries": true,
   "evenBetterToml.formatter.indentString": "  ",
   "evenBetterToml.formatter.indentTables": true,
-  "evenBetterToml.formatter.reorderKeys": false,
+  "evenBetterToml.formatter.reorderKeys": true,
   // Associate .stow-local-ignore files with the ignore language
   // As its basically the same thing but for stow instead of git
   "files.associations": {

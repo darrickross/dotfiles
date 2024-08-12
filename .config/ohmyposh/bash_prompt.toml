@@ -25,13 +25,14 @@ version                = 2
 # Primary Information line
 # ==============================================================================
 [[blocks]]
-  type      = 'prompt'
   alignment = 'left'
+  type      = 'prompt'
 
   [[blocks.segments]]
     # https://ohmyposh.dev/docs/segments/system/time
-    type       = "time"
-    style      = "plain"
+    style = "plain"
+    type  = "time"
+
     background = "p:time_bg"
     foreground = "p:time_fg"
 
@@ -76,8 +77,9 @@ version                = 2
 
   [[blocks.segments]]
     # https://ohmyposh.dev/docs/segments/system/path
-    type       = 'path'
-    style      = 'plain'
+    style = 'plain'
+    type  = 'path'
+
     background = 'p:file_path_bg'
     foreground = 'p:file_path_fg'
     template   = '{{ .Path }}'
@@ -87,8 +89,8 @@ version                = 2
 
   [[blocks.segments]]
     # https://ohmyposh.dev/docs/segments/scm/git
-    type  = 'git'
     style = 'plain'
+    type  = 'git'
 
     background = 'p:git_bg'
     foreground = 'p:git_fg'
@@ -96,35 +98,35 @@ version                = 2
     template = ' <p:git_branch_fg>{{ .HEAD }}</><p:git_changes_fg>{{ if or (.Working.Changed) (.Staging.Changed) }} *{{ end }}</><p:git_behind_fg>{{ if gt .Behind 0 }} ⇣{{ end }}</><p:git_ahead_fg>{{ if gt .Ahead 0 }} ⇡{{ end }}</>'
 
     [blocks.segments.properties]
-      fetch_status = true
       branch_icon  = ' ' # This character is a git branch icon
+      fetch_status = true
 
   [[blocks.segments]]
     # https://ohmyposh.dev/docs/segments/system/executiontime
-    type       = "executiontime"
-    style      = "plain"
     background = "p:execution_time_bg"
     foreground = "p:execution_time_fg"
+    style      = "plain"
     template   = " {{ .FormattedMs }} "
+    type       = "executiontime"
 
     [blocks.segments.properties]
-      threshold      = 5000
-      style          = "round"
       always_enabled = false
+      style          = "round"
+      threshold      = 5000
 
 # ==============================================================================
 # Prompt line
 # ==============================================================================
 [[blocks]]
-  type      = 'prompt'
   alignment = 'left'
   newline   = true
+  type      = 'prompt'
 
   [[blocks.segments]]
     # https://ohmyposh.dev/docs/segments/system/text
-    type     = 'text'
     style    = 'plain'
     template = '❯'
+    type     = 'text'
 
     background_templates = [
       "{{if gt .Code 0}}p:prompt_err_bg{{end}}",
