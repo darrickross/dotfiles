@@ -39,6 +39,42 @@ version                = 2
       time_format = "15:04:05"
 
   [[blocks.segments]]
+    # https://ohmyposh.dev/docs/segments/system/session
+    style = "plain"
+    type  = "session"
+
+    background = "p:username_bg"
+    foreground = "p:username_fg"
+    template   = "{{ .UserName }}<p:at_sign_fg>@</>"
+
+  [[blocks.segments]]
+    # https://ohmyposh.dev/docs/segments/system/os
+    style = "plain"
+    type  = "os"
+
+    background = "p:wsl_bg"
+    foreground = "p:wsl_fg"
+    template   = "{{ if .WSL }}WSL<p:at_sign_fg>@</>{{ end }}"
+
+  [[blocks.segments]]
+    # https://ohmyposh.dev/docs/segments/system/session
+    style = "plain"
+    type  = "session"
+
+    background = "p:ssh_session_bg"
+    foreground = "p:ssh_session_fg"
+    template   = "{{ if .SSHSession }}SSH<p:at_sign_fg>@</>{{ end }}"
+
+  [[blocks.segments]]
+    # https://ohmyposh.dev/docs/segments/system/session
+    style = "plain"
+    type  = "session"
+
+    background = "p:hostname_bg"
+    foreground = "p:hostname_fg"
+    template   = "{{ .HostName }}<p:at_sign_fg>:</>"
+
+  [[blocks.segments]]
     # https://ohmyposh.dev/docs/segments/system/path
     type       = 'path'
     style      = 'plain'
@@ -102,6 +138,8 @@ version                = 2
 
 [palette]
   # https://ohmyposh.dev/docs/configuration/colors
+  at_sign_fg = "white"
+
   execution_time_bg = "transparent"
   execution_time_fg = "red"
 
@@ -114,10 +152,22 @@ version                = 2
   git_branch_fg  = "yellow"
   git_changes_fg = "red"
 
+  hostname_bg = "transparent"
+  hostname_fg = "cyan"
+
   prompt_err_bg = "transparent"
   prompt_err_fg = "red"
   prompt_ok_bg  = "transparent"
   prompt_ok_fg  = "green"
 
+  ssh_session_bg = "transparent"
+  ssh_session_fg = "red"
+
   time_bg = "transparent"
   time_fg = "green"
+
+  username_bg = "transparent"
+  username_fg = "magenta"
+
+  wsl_bg = "transparent"
+  wsl_fg = "red"
