@@ -17,7 +17,12 @@
 #   see https://ohmyposh.dev/docs/configuration/block#type
 # ==============================================================================
 
-auto_upgrade           = true
+# Dowwngrade method:
+# curl -s -f -L \
+#   https://github.com/JanDeDobbeleer/oh-my-posh/releases/download/v23.6.4/posh-linux-amd64 \
+#   -o "$HOME/.local/bin/oh-my-posh"
+
+auto_upgrade           = false
 console_title_template = '{{ .Shell }} in {{ .Folder }}'
 final_space            = true
 version                = 2
