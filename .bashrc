@@ -125,6 +125,12 @@ fi
 # Set Python 3 as default
 alias python='python3'
 
+# Make sure ~/.local/bin is in PATH
+# oh-my-posh is installed in ~/.local/bin
+if [ -d "$HOME/.local/bin" ]; then
+    PATH="$HOME/.local/bin:$PATH"
+fi
+
 # If oh-my-posh is installed, use it
 # Otherwise, use custom bash prompt in PS1
 if oh-my-posh --version >/dev/null 2>&1; then
