@@ -133,10 +133,18 @@ if oh-my-posh --version >/dev/null 2>&1; then
     eval "$(oh-my-posh init bash --config ~/.config/ohmyposh/bash_prompt.toml)"
 
 else
+
+    package_manager="apt"
+
+    if dnf --version >/dev/null 2>&1; then
+        package_manager="dnf"
+    fi
+
     cat <<-HEREDOC
 Oh-My-Posh not found. https://ohmyposh.dev/docs/installation/prompt
 Install cmd:
 
+    sudo $package_manager install -y curl unzip
     curl -s https://ohmyposh.dev/install.sh | bash -s
 
 HEREDOC
