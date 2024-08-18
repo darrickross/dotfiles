@@ -17,6 +17,7 @@
 #   see https://ohmyposh.dev/docs/configuration/block#type
 # ==============================================================================
 
+auto_upgrade           = true
 console_title_template = '{{ .Shell }} in {{ .Folder }}'
 final_space            = true
 version                = 2
