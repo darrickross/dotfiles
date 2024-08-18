@@ -6,6 +6,13 @@
     "dotfiles",
     "Gitschooldude"
   ],
+  // Add TOML settings
+  "evenBetterToml.formatter.alignEntries": true,
+  "evenBetterToml.formatter.allowedBlankLines": 1,
+  "evenBetterToml.formatter.indentEntries": true,
+  "evenBetterToml.formatter.indentString": "  ",
+  "evenBetterToml.formatter.indentTables": true,
+  "evenBetterToml.formatter.reorderKeys": true,
   // Associate .stow-local-ignore files with the ignore language
   // As its basically the same thing but for stow instead of git
   "files.associations": {
@@ -24,5 +31,10 @@
     "editor.tabSize": 4,
     "editor.insertSpaces": true,
     "editor.defaultFormatter": "foxundermoon.shell-format"
+  },
+  "[toml]": {
+    "editor.tabSize": 2,
+    "editor.insertSpaces": true,
+    "editor.defaultFormatter": "tamasfe.even-better-toml",
   }
 }

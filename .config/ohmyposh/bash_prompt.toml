@@ -1,0 +1,175 @@
+#:schema https://raw.githubusercontent.com/JanDeDobbeleer/oh-my-posh/main/themes/schema.json
+
+# ==============================================================================
+# Known problems
+#
+# - VSCode terminal has an intergrated shell error code checker using it will
+#   cause the {{ .Code }} to always be 0
+#   Disable by setting
+#     "terminal.integrated.shellIntegration.enabled": false
+#   in your settings.json
+#   see https://github.com/JanDeDobbeleer/oh-my-posh/discussions/3490
+#
+# - Bash does not support transient prompt
+#   see https://ohmyposh.dev/docs/configuration/transient
+#
+# - Bash does not support rprompt
+#   see https://ohmyposh.dev/docs/configuration/block#type
+# ==============================================================================
+
+console_title_template = '{{ .Shell }} in {{ .Folder }}'
+final_space            = true
+version                = 2
+
+# ==============================================================================
+# Primary Information line
+# ==============================================================================
+[[blocks]]
+  alignment = 'left'
+  type      = 'prompt'
+
+  [[blocks.segments]]
+    # https://ohmyposh.dev/docs/segments/system/time
+    style = "plain"
+    type  = "time"
+
+    background = "p:time_bg"
+    foreground = "p:time_fg"
+
+    [blocks.segments.properties]
+      time_format = "15:04:05"
+
+  [[blocks.segments]]
+    # https://ohmyposh.dev/docs/segments/system/session
+    style = "plain"
+    type  = "session"
+
+    background = "p:username_bg"
+    foreground = "p:username_fg"
+    template   = "{{ .UserName }}<p:at_sign_fg>@</>"
+
+  [[blocks.segments]]
+    # https://ohmyposh.dev/docs/segments/system/os
+    style = "plain"
+    type  = "os"
+
+    background = "p:wsl_bg"
+    foreground = "p:wsl_fg"
+    template   = "{{ if .WSL }}WSL<p:at_sign_fg>@</>{{ end }}"
+
+  [[blocks.segments]]
+    # https://ohmyposh.dev/docs/segments/system/session
+    style = "plain"
+    type  = "session"
+
+    background = "p:ssh_session_bg"
+    foreground = "p:ssh_session_fg"
+    template   = "{{ if .SSHSession }}SSH<p:at_sign_fg>@</>{{ end }}"
+
+  [[blocks.segments]]
+    # https://ohmyposh.dev/docs/segments/system/session
+    style = "plain"
+    type  = "session"
+
+    background = "p:hostname_bg"
+    foreground = "p:hostname_fg"
+    template   = "{{ .HostName }}<p:at_sign_fg>:</>"
+
+  [[blocks.segments]]
+    # https://ohmyposh.dev/docs/segments/system/path
+    style = 'plain'
+    type  = 'path'
+
+    background = 'p:file_path_bg'
+    foreground = 'p:file_path_fg'
+    template   = '{{ .Path }}'
+
+    [blocks.segments.properties]
+      style = 'full'
+
+  [[blocks.segments]]
+    # https://ohmyposh.dev/docs/segments/scm/git
+    style = 'plain'
+    type  = 'git'
+
+    background = 'p:git_bg'
+    foreground = 'p:git_fg'
+
+    template = ' <p:git_branch_fg>{{ .HEAD }}</><p:git_changes_fg>{{ if or (.Working.Changed) (.Staging.Changed) }} *{{ end }}</><p:git_behind_fg>{{ if gt .Behind 0 }} ⇣{{ end }}</><p:git_ahead_fg>{{ if gt .Ahead 0 }} ⇡{{ end }}</>'
+
+    [blocks.segments.properties]
+      branch_icon  = ' ' # This character is a git branch icon
+      fetch_status = true
+
+  [[blocks.segments]]
+    # https://ohmyposh.dev/docs/segments/system/executiontime
+    background = "p:execution_time_bg"
+    foreground = "p:execution_time_fg"
+    style      = "plain"
+    template   = " {{ .FormattedMs }} "
+    type       = "executiontime"
+
+    [blocks.segments.properties]
+      always_enabled = false
+      style          = "round"
+      threshold      = 5000
+
+# ==============================================================================
+# Prompt line
+# ==============================================================================
+[[blocks]]
+  alignment = 'left'
+  newline   = true
+  type      = 'prompt'
+
+  [[blocks.segments]]
+    # https://ohmyposh.dev/docs/segments/system/text
+    style    = 'plain'
+    template = '❯'
+    type     = 'text'
+
+    background_templates = [
+      "{{if gt .Code 0}}p:prompt_err_bg{{end}}",
+      "{{if eq .Code 0}}p:prompt_ok_bg{{end}}",
+    ]
+
+    foreground_templates = [
+      "{{if gt .Code 0}}p:prompt_err_fg{{end}}",
+      "{{if eq .Code 0}}p:prompt_ok_fg{{end}}",
+    ]
+
+[palette]
+  # https://ohmyposh.dev/docs/configuration/colors
+  at_sign_fg = "white"
+
+  execution_time_bg = "transparent"
+  execution_time_fg = "red"
+
+  file_path_bg = "transparent"
+  file_path_fg = "blue"
+
+  git_ahead_fg   = "green"
+  git_behind_fg  = "red"
+  git_bg         = "transparent"
+  git_branch_fg  = "yellow"
+  git_changes_fg = "red"
+
+  hostname_bg = "transparent"
+  hostname_fg = "cyan"
+
+  prompt_err_bg = "transparent"
+  prompt_err_fg = "red"
+  prompt_ok_bg  = "transparent"
+  prompt_ok_fg  = "green"
+
+  ssh_session_bg = "transparent"
+  ssh_session_fg = "red"
+
+  time_bg = "transparent"
+  time_fg = "green"
+
+  username_bg = "transparent"
+  username_fg = "magenta"
+
+  wsl_bg = "transparent"
+  wsl_fg = "red"

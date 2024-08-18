@@ -125,6 +125,22 @@ fi
 # Set Python 3 as default
 alias python='python3'
 
-# Custom prompt
-# [HH:MM:SS][ExitCode][Hostname]@Username:WorkingDirectory$_
-export PS1='[\[\e[32m\]\t\[\e[0m\]][\[\e[91m\]$?\[\e[0m\]]\[\e[35m\]\h\[\e[0m\]@\[\e[36m\]\u\[\e[0m\]:\[\e[33m\]\w\[\e[0m\]\\$\[\e[35m\] \[\e[0m\]'
+# If oh-my-posh is installed, use it
+# Otherwise, use custom bash prompt in PS1
+if oh-my-posh --version >/dev/null 2>&1; then
+
+    # Use oh-my-posh
+    eval "$(oh-my-posh init bash --config ~/.config/ohmyposh/bash_prompt.toml)"
+
+else
+    cat <<-HEREDOC
+Oh-My-Posh not found. https://ohmyposh.dev/docs/installation/prompt
+Install cmd:
+
+    curl -s https://ohmyposh.dev/install.sh | bash -s
+
+HEREDOC
+    # Custom prompt
+    # [HH:MM:SS][ExitCode][Hostname]@Username:WorkingDirectory$_
+    export PS1='[\[\e[32m\]\t\[\e[0m\]][\[\e[91m\]$?\[\e[0m\]]\[\e[35m\]\h\[\e[0m\]@\[\e[36m\]\u\[\e[0m\]:\[\e[33m\]\w\[\e[0m\]\\$\[\e[35m\] \[\e[0m\]'
+fi
