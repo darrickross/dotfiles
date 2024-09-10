@@ -2,9 +2,21 @@
   "cSpell.words": [
     "Automagic",
     "Automagically",
+    "checkwinsize",
+    "dircolors",
     "dotfile",
     "dotfiles",
-    "Gitschooldude"
+    "erasedups",
+    "fgrep",
+    "Gitschooldude",
+    "histappend",
+    "ignoreboth",
+    "lesspipe",
+    "ohmyposh",
+    "rxvt",
+    "setaf",
+    "setf",
+    "vdir"
   ],
   // Add TOML settings
   "evenBetterToml.formatter.alignEntries": true,
@@ -35,6 +47,6 @@
   "[toml]": {
     "editor.tabSize": 2,
     "editor.insertSpaces": true,
-    "editor.defaultFormatter": "tamasfe.even-better-toml",
+    "editor.defaultFormatter": "tamasfe.even-better-toml"
   }
 }
