@@ -12,10 +12,13 @@
     "histappend",
     "ignoreboth",
     "lesspipe",
+    "libpam",
+    "lrwxrwxrwx",
     "ohmyposh",
     "rxvt",
     "setaf",
     "setf",
+    "SHLVL",
     "vdir"
   ],
   // Add TOML settings
