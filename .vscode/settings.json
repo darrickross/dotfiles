@@ -48,5 +48,7 @@
     "editor.tabSize": 2,
     "editor.insertSpaces": true,
     "editor.defaultFormatter": "tamasfe.even-better-toml"
-  }
+  },
+  // Enable format on save
+  "editor.formatOnSave": true
 }
