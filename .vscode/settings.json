@@ -12,10 +12,13 @@
     "histappend",
     "ignoreboth",
     "lesspipe",
+    "libpam",
+    "lrwxrwxrwx",
     "ohmyposh",
     "rxvt",
     "setaf",
     "setf",
+    "SHLVL",
     "vdir"
   ],
   // Add TOML settings
@@ -48,5 +51,7 @@
     "editor.tabSize": 2,
     "editor.insertSpaces": true,
     "editor.defaultFormatter": "tamasfe.even-better-toml"
-  }
+  },
+  // Enable format on save
+  "editor.formatOnSave": true
 }

@@ -131,7 +131,7 @@ alias python='python3'
 # Make sure ~/.local/bin is in PATH
 # oh-my-posh is installed in ~/.local/bin
 if [ -d "$HOME/.local/bin" ]; then
-    PATH="$HOME/.local/bin:$PATH"
+    export PATH="$HOME/.local/bin:$PATH"
 fi
 
 # If oh-my-posh is installed, use it

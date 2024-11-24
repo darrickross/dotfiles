@@ -25,7 +25,43 @@
 auto_upgrade           = false
 console_title_template = '{{ .Shell }} in {{ .Folder }}'
 final_space            = true
-version                = 2
+version                = 3
+
+[palette]
+  # https://ohmyposh.dev/docs/configuration/colors
+  at_sign_fg = 'white'
+
+  execution_time_bg = 'transparent'
+  execution_time_fg = 'red'
+
+  file_path_bg = 'transparent'
+  file_path_fg = 'blue'
+
+  git_ahead_fg   = 'green'
+  git_behind_fg  = 'red'
+  git_bg         = 'transparent'
+  git_branch_fg  = 'yellow'
+  git_changes_fg = 'red'
+
+  hostname_bg = 'transparent'
+  hostname_fg = 'cyan'
+
+  prompt_err_bg = 'transparent'
+  prompt_err_fg = 'red'
+  prompt_ok_bg  = 'transparent'
+  prompt_ok_fg  = 'green'
+
+  ssh_session_bg = 'transparent'
+  ssh_session_fg = 'red'
+
+  time_bg = 'transparent'
+  time_fg = 'green'
+
+  username_bg = 'transparent'
+  username_fg = 'magenta'
+
+  wsl_bg = 'transparent'
+  wsl_fg = 'red'
 
 # ==============================================================================
 # Primary Information line
@@ -36,88 +72,96 @@ version                = 2
 
   [[blocks.segments]]
     # https://ohmyposh.dev/docs/segments/system/time
-    style = "plain"
-    type  = "time"
-
-    background = "p:time_bg"
-    foreground = "p:time_fg"
+    background = 'p:time_bg'
+    foreground = 'p:time_fg'
+    style      = 'plain'
+    type       = 'time'
 
     [blocks.segments.properties]
-      time_format = "15:04:05"
+      cache_duration = 'none'
+      time_format    = '15:04:05'
 
   [[blocks.segments]]
     # https://ohmyposh.dev/docs/segments/system/session
-    style = "plain"
-    type  = "session"
+    background = 'p:username_bg'
+    foreground = 'p:username_fg'
+    style      = 'plain'
+    template   = '{{ .UserName }}<p:at_sign_fg>@</>'
+    type       = 'session'
 
-    background = "p:username_bg"
-    foreground = "p:username_fg"
-    template   = "{{ .UserName }}<p:at_sign_fg>@</>"
+    [blocks.segments.properties]
+      cache_duration = 'none'
 
   [[blocks.segments]]
     # https://ohmyposh.dev/docs/segments/system/os
-    style = "plain"
-    type  = "os"
+    background = 'p:wsl_bg'
+    foreground = 'p:wsl_fg'
+    style      = 'plain'
+    template   = '{{ if .WSL }}WSL<p:at_sign_fg>@</>{{ end }}'
+    type       = 'os'
 
-    background = "p:wsl_bg"
-    foreground = "p:wsl_fg"
-    template   = "{{ if .WSL }}WSL<p:at_sign_fg>@</>{{ end }}"
-
-  [[blocks.segments]]
-    # https://ohmyposh.dev/docs/segments/system/session
-    style = "plain"
-    type  = "session"
-
-    background = "p:ssh_session_bg"
-    foreground = "p:ssh_session_fg"
-    template   = "{{ if .SSHSession }}SSH<p:at_sign_fg>@</>{{ end }}"
+    [blocks.segments.properties]
+      cache_duration = 'none'
 
   [[blocks.segments]]
     # https://ohmyposh.dev/docs/segments/system/session
-    style = "plain"
-    type  = "session"
+    background = 'p:ssh_session_bg'
+    foreground = 'p:ssh_session_fg'
+    style      = 'plain'
+    template   = '{{ if .SSHSession }}SSH<p:at_sign_fg>@</>{{ end }}'
+    type       = 'session'
 
-    background = "p:hostname_bg"
-    foreground = "p:hostname_fg"
-    template   = "{{ .HostName }}<p:at_sign_fg>:</>"
+    [blocks.segments.properties]
+      cache_duration = 'none'
+
+  [[blocks.segments]]
+    # https://ohmyposh.dev/docs/segments/system/session
+    background = 'p:hostname_bg'
+    foreground = 'p:hostname_fg'
+    style      = 'plain'
+    template   = '{{ .HostName }}<p:at_sign_fg>:</>'
+    type       = 'session'
+
+    [blocks.segments.properties]
+      cache_duration = 'none'
 
   [[blocks.segments]]
     # https://ohmyposh.dev/docs/segments/system/path
-    style = 'plain'
-    type  = 'path'
-
     background = 'p:file_path_bg'
     foreground = 'p:file_path_fg'
+    style      = 'plain'
     template   = '{{ .Path }}'
+    type       = 'path'
 
     [blocks.segments.properties]
-      style = 'full'
+      cache_duration = 'none'
+      style          = 'full'
 
   [[blocks.segments]]
     # https://ohmyposh.dev/docs/segments/scm/git
-    style = 'plain'
-    type  = 'git'
-
     background = 'p:git_bg'
     foreground = 'p:git_fg'
-
-    template = ' <p:git_branch_fg>{{ .HEAD }}</><p:git_changes_fg>{{ if or (.Working.Changed) (.Staging.Changed) }} *{{ end }}</><p:git_behind_fg>{{ if gt .Behind 0 }} ⇣{{ end }}</><p:git_ahead_fg>{{ if gt .Ahead 0 }} ⇡{{ end }}</>'
+    style      = 'plain'
+    template   = ' <p:git_branch_fg>{{ .HEAD }}</><p:git_changes_fg>{{ if or (.Working.Changed) (.Staging.Changed) }} *{{ end }}</><p:git_behind_fg>{{ if gt .Behind 0 }} ⇣{{ end }}</><p:git_ahead_fg>{{ if gt .Ahead 0 }} ⇡{{ end }}</>'
+    type       = 'git'
 
     [blocks.segments.properties]
-      branch_icon  = ' ' # This character is a git branch icon
-      fetch_status = true
+      branch_icon    = ' '   # This character is a git branch icon
+      cache_duration = 'none'
+      fetch_status   = true
 
   [[blocks.segments]]
     # https://ohmyposh.dev/docs/segments/system/executiontime
-    background = "p:execution_time_bg"
-    foreground = "p:execution_time_fg"
-    style      = "plain"
-    template   = " {{ .FormattedMs }} "
-    type       = "executiontime"
+    background = 'p:execution_time_bg'
+    foreground = 'p:execution_time_fg'
+    style      = 'plain'
+    template   = ' {{ .FormattedMs }} '
+    type       = 'executiontime'
 
     [blocks.segments.properties]
       always_enabled = false
-      style          = "round"
+      cache_duration = 'none'
+      style          = 'round'
       threshold      = 5000
 
 # ==============================================================================
@@ -130,52 +174,17 @@ version                = 2
 
   [[blocks.segments]]
     # https://ohmyposh.dev/docs/segments/system/text
-    style    = 'plain'
-    template = '❯'
-    type     = 'text'
-
     background_templates = [
-      "{{if gt .Code 0}}p:prompt_err_bg{{end}}",
-      "{{if eq .Code 0}}p:prompt_ok_bg{{end}}",
+      '{{if gt .Code 0}}p:prompt_err_bg{{end}}',
+      '{{if eq .Code 0}}p:prompt_ok_bg{{end}}',
     ]
-
     foreground_templates = [
-      "{{if gt .Code 0}}p:prompt_err_fg{{end}}",
-      "{{if eq .Code 0}}p:prompt_ok_fg{{end}}",
+      '{{if gt .Code 0}}p:prompt_err_fg{{end}}',
+      '{{if eq .Code 0}}p:prompt_ok_fg{{end}}',
     ]
+    style = 'plain'
+    template = '❯'
+    type = 'text'
 
-[palette]
-  # https://ohmyposh.dev/docs/configuration/colors
-  at_sign_fg = "white"
-
-  execution_time_bg = "transparent"
-  execution_time_fg = "red"
-
-  file_path_bg = "transparent"
-  file_path_fg = "blue"
-
-  git_ahead_fg   = "green"
-  git_behind_fg  = "red"
-  git_bg         = "transparent"
-  git_branch_fg  = "yellow"
-  git_changes_fg = "red"
-
-  hostname_bg = "transparent"
-  hostname_fg = "cyan"
-
-  prompt_err_bg = "transparent"
-  prompt_err_fg = "red"
-  prompt_ok_bg  = "transparent"
-  prompt_ok_fg  = "green"
-
-  ssh_session_bg = "transparent"
-  ssh_session_fg = "red"
-
-  time_bg = "transparent"
-  time_fg = "green"
-
-  username_bg = "transparent"
-  username_fg = "magenta"
-
-  wsl_bg = "transparent"
-  wsl_fg = "red"
+    [blocks.segments.properties]
+      cache_duration = 'none'
