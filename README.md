@@ -33,7 +33,7 @@ I personally enjoy placing all work in a sub directory of my home directory to k
 I use a variable to ensure all subsequent commands can reference the same path exactly as needed.
 
 ```bash
-INSTALL_DIR="$HOME/git/dotfiles"
+INSTALL_DIR="$HOME/projects/dotfiles"
 ```
 
 > [!NOTE]
@@ -93,12 +93,12 @@ Expected dry run results:
 
 ```sh
 MKDIR: .aws
-LINK: .aws/config => ../git/dotfiles/.aws/config
-LINK: .gitconfig => git/dotfiles/.gitconfig
-LINK: .bash_logout => git/dotfiles/.bash_logout
+LINK: .aws/config => ../projects/dotfiles/.aws/config
+LINK: .gitconfig => projects/dotfiles/.gitconfig
+LINK: .bash_logout => projects/dotfiles/.bash_logout
 MKDIR: .config
 MKDIR: .config/gh
-LINK: .config/gh/config.yml => ../../git/dotfiles/.config/gh/config.yml
+LINK: .config/gh/config.yml => ../../projects/dotfiles/.config/gh/config.yml
 WARNING! stowing . would cause conflicts:
   * existing target is neither a link nor a directory: .bashrc
   * existing target is neither a link nor a directory: .profile
@@ -286,10 +286,10 @@ Example output
 
 ```text
 $ ls -al $HOME | grep "\->"
-lrwxrwxrwx  1 my_user my_user    25 Aug  3 22:14 .bash_logout -> git/dotfiles/.bash_logout
-lrwxrwxrwx  1 my_user my_user    20 Aug  3 22:57 .bashrc -> git/dotfiles/.bashrc
-lrwxrwxrwx  1 my_user my_user    23 Aug  3 22:14 .gitconfig -> git/dotfiles/.gitconfig
-lrwxrwxrwx  1 my_user my_user    21 Aug  3 22:14 .profile -> git/dotfiles/.profile
+lrwxrwxrwx  1 my_user my_user    25 Aug  3 22:14 .bash_logout -> projects/dotfiles/.bash_logout
+lrwxrwxrwx  1 my_user my_user    20 Aug  3 22:57 .bashrc -> projects/dotfiles/.bashrc
+lrwxrwxrwx  1 my_user my_user    23 Aug  3 22:14 .gitconfig -> projects/dotfiles/.gitconfig
+lrwxrwxrwx  1 my_user my_user    21 Aug  3 22:14 .profile -> projects/dotfiles/.profile
 ```
 
 You can also use `find` to search recursively to see the symbolic links, without their link path.
