@@ -125,6 +125,11 @@ if ! shopt -oq posix; then
     fi
 fi
 
+# Add ssh-sk-helper for WSL
+if grep -qEi "(Microsoft|WSL)" /proc/version &>/dev/null; then
+    export SSH_SK_HELPER="/mnt/c/Program Files/OpenSSH/ssh-sk-helper.exe"
+fi
+
 # Set Python 3 as default
 alias python='python3'
 
