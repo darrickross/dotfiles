@@ -125,8 +125,11 @@ if ! shopt -oq posix; then
     fi
 fi
 
-# Add ssh-sk-helper for WSL
+# ==============================================================================
+# WSL only things
+# ==============================================================================
 if grep -qEi "(Microsoft|WSL)" /proc/version &>/dev/null; then
+    # Add ssh-sk-helper for WSL
     export SSH_SK_HELPER="/mnt/c/Program Files/OpenSSH/ssh-sk-helper.exe"
 fi
 
