@@ -129,6 +129,9 @@ fi
 # WSL only things
 # ==============================================================================
 if grep -qEi "(Microsoft|WSL)" /proc/version &>/dev/null; then
+    # Make clipboard easier to paste to
+    alias clipboard="/mnt/c/WINDOWS/system32/clip.exe"
+
     # Add ssh-sk-helper for WSL
     export SSH_SK_HELPER="/mnt/c/Program Files/OpenSSH/ssh-sk-helper.exe"
 fi
