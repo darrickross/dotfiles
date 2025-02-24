@@ -9,6 +9,12 @@
     "erasedups",
     "fgrep",
     "Gitschooldude",
+    "gpgconf",
+    "gpgparsemail",
+    "gpgsm",
+    "gpgsplit",
+    "gpgtar",
+    "gpgv",
     "histappend",
     "ignoreboth",
     "lesspipe",
@@ -19,7 +25,9 @@
     "setaf",
     "setf",
     "SHLVL",
-    "vdir"
+    "signingkey",
+    "vdir",
+    "wslpath"
   ],
   // Add TOML settings
   "evenBetterToml.formatter.alignEntries": true,

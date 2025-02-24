@@ -134,6 +134,26 @@ if grep -qEi "(Microsoft|WSL)" /proc/version &>/dev/null; then
 
     # Add ssh-sk-helper for WSL
     export SSH_SK_HELPER="/mnt/c/Program Files/OpenSSH/ssh-sk-helper.exe"
+
+    alias gpg="/mnt/c/Program\ Files\ \(x86\)/GnuPG/bin/gpg.exe"
+    alias gpg-agent="/mnt/c/Program\ Files\ \(x86\)/GnuPG/bin/gpg-agent.exe"
+    alias gpg-connect-agent="/mnt/c/Program\ Files\ \(x86\)/GnuPG/bin/gpg-connect-agent.exe"
+    alias gpg-wks-client="/mnt/c/Program\ Files\ \(x86\)/GnuPG/bin/gpg-wks-client.exe"
+    alias gpgconf="/mnt/c/Program\ Files\ \(x86\)/GnuPG/bin/gpgconf.exe"
+    # alias gpgparsemail=""
+    alias gpgsm="/mnt/c/Program\ Files\ \(x86\)/GnuPG/bin/gpgsm.exe"
+    # alias gpgsplit=""
+    alias gpgtar="/mnt/c/Program\ Files\ \(x86\)/GnuPG/bin/gpgtar.exe"
+    alias gpgv="/mnt/c/Program\ Files\ \(x86\)/GnuPG/bin/gpgv.exe"
+fi
+
+# This has the exact same condition as above, but needs to be separate
+# Because if its in the same parsing group it won't call the alias version of gpgconf
+# https://www.shellcheck.net/wiki/SC2262
+if grep -qEi "(Microsoft|WSL)" /proc/version &>/dev/null; then
+    GPG_AGENT_SOCK=$(wslpath -u "$(gpgconf --list-dirs agent-socket | tr -d '\r')")
+    export GPG_AGENT_SOCK
+    export SSH_AUTH_SOCK=$GPG_AGENT_SOCK
 fi
 
 # Set Python 3 as default

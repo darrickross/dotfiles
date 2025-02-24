@@ -1,5 +1,8 @@
 [init]
-defaultBranch = main
+	defaultBranch = main
 [user]
-email = dross56@alumni.jh.edu
-name = Darrick Ross
+	email = me@darrickross.com
+    name = Darrick Ross
+	signingkey = DF1B93A0B3CDCF394B9D2708108B3A7D41B13305
+[gpg]
+	program = /mnt/c/Program Files (x86)/GnuPG/bin/gpg.exe
