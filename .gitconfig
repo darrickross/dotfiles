@@ -4,5 +4,9 @@
 	email = me@darrickross.com
     name = Darrick Ross
 	signingkey = DF1B93A0B3CDCF394B9D2708108B3A7D41B13305
+[credential "https://github.com"]
+	helper = !/usr/bin/gh auth git-credential
+[credential "https://gist.github.com"]
+	helper = !/usr/bin/gh auth git-credential
 [gpg]
 	program = /mnt/c/Program Files (x86)/GnuPG/bin/gpg.exe
