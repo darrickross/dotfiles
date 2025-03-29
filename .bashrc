@@ -194,3 +194,10 @@ HEREDOC
     # [HH:MM:SS][ExitCode][Hostname]@Username:WorkingDirectory$_
     export PS1='[\[\e[32m\]\t\[\e[0m\]][\[\e[91m\]$?\[\e[0m\]]\[\e[35m\]\h\[\e[0m\]@\[\e[36m\]\u\[\e[0m\]:\[\e[33m\]\w\[\e[0m\]\\$\[\e[35m\] \[\e[0m\]'
 fi
+
+# Fast Simple Node Manager
+FNM_PATH="/home/itsjustmech/.local/share/fnm"
+if [ -d "$FNM_PATH" ]; then
+    export PATH="$FNM_PATH:$PATH"
+    eval "$(fnm env)"
+fi
