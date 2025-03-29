@@ -11,3 +11,4 @@ LICENSE
 
 # VSCode related
 .vscode/*
+docs/*
