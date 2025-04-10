@@ -274,6 +274,8 @@ cd $INSTALL_DIR
 git status
 
 git restore .
+
+git status
 ```
 
 You have now overridden the conflict files and applied the dotfiles.
