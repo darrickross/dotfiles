@@ -269,6 +269,10 @@ stow \
   --adopt \
   .
 
+cd $INSTALL_DIR
+
+git status
+
 git restore .
 ```
 
