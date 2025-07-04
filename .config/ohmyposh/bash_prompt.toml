@@ -3,7 +3,7 @@
 # ==============================================================================
 # Known problems
 #
-# - VSCode terminal has an intergrated shell error code checker using it will
+# - VSCode terminal has an integrated shell error code checker using it will
 #   cause the {{ .Code }} to always be 0
 #   Disable by setting
 #     "terminal.integrated.shellIntegration.enabled": false
@@ -17,7 +17,7 @@
 #   see https://ohmyposh.dev/docs/configuration/block#type
 # ==============================================================================
 
-# Dowwngrade method:
+# Downgrade method:
 # curl -s -f -L \
 #   https://github.com/JanDeDobbeleer/oh-my-posh/releases/download/v23.6.4/posh-linux-amd64 \
 #   -o "$HOME/.local/bin/oh-my-posh"
