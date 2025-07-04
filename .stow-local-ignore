@@ -12,3 +12,6 @@ LICENSE
 # VSCode related
 .vscode/*
 docs/*
+
+# Python Development related
+.venv/*
