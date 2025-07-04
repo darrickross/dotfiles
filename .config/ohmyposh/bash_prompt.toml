@@ -51,6 +51,9 @@ version                = 3
   prompt_ok_bg  = 'transparent'
   prompt_ok_fg  = 'green'
 
+  python_venv_bg = 'transparent'
+  python_venv_fg = 'yellow'
+
   ssh_session_bg = 'transparent'
   ssh_session_fg = 'red'
 
@@ -80,6 +83,14 @@ version                = 3
     [blocks.segments.properties]
       cache_duration = 'none'
       time_format    = '15:04:05'
+
+  [[blocks.segments]]
+    # https://ohmyposh.dev/docs/segments/languages/python
+    background = 'p:python_venv_bg'
+    foreground = 'p:python_venv_fg'
+    style      = 'plain'
+    template   = ' {{ .Full }} '
+    type       = 'python'
 
   [[blocks.segments]]
     # https://ohmyposh.dev/docs/segments/system/session
