@@ -1,40 +1,95 @@
 import os
+import argparse
+import sys
 import PyPDF2
 
-# Path to your PDF file
-directory = "/mnt/c/Users/ItsJustMech/Desktop"
-pdf_path = f"{directory}/Manual-SideTable-Yaheetech.pdf"
 
-# base, ext = os.path.splitext(pdf_path)
-# output_path = f"{base}-new{ext}"
-output_path = pdf_path
+def process_pdfs(directory):
+    pdf_files = [f for f in os.listdir(directory) if f.lower().endswith(".pdf")]
+    total_files = len(pdf_files)
 
-# Pages to rotate (0-based indexing)
-# pages_to_rotate = [1, 2, 3, 5]  # corresponds to pages 2, 3, 4, and 6
-pages_to_rotate = [
-    1,
-    0,
-    3,
-    2,
-    5,
-    4,
-    7,
-    6,
-    # 8,
-    # 9,
-    # 10,
-]  # corresponds to pages 2, 3, 4, and 6
+    if total_files == 0:
+        print("No PDF files found in the directory.")
+        return
 
-with open(pdf_path, "rb") as file:
-    reader = PyPDF2.PdfReader(file)
-    writer = PyPDF2.PdfWriter()
+    # Determine padding width for file indices
+    file_pad = len(str(total_files))
 
-    for i, page in enumerate(reader.pages):
-        if i in pages_to_rotate:
-            page.rotate(90)  # Rotate 90 degrees clockwise
-        writer.add_page(page)
+    for file_idx, pdf_file in enumerate(pdf_files, start=1):
+        prompt = f"[{file_idx:0{file_pad}}/{total_files}] Do you want to process '{pdf_file}'? (y/n, Enter to skip): "
+        sys.stdout.write(prompt)
+        sys.stdout.flush()
+        answer = input().strip().lower()
+        if answer not in ("y", "yes"):
+            skip_msg = f"Skipped '{pdf_file}'"
+            clear_line = "\r" + " " * len(prompt) + "\r" + skip_msg + "\n"
+            sys.stdout.write(clear_line)
+            sys.stdout.flush()
+            continue
 
-    with open(output_path, "wb") as output_file:
-        writer.write(output_file)
+        input_path = os.path.join(directory, pdf_file)
+        with open(input_path, "rb") as in_f:
+            reader = PyPDF2.PdfReader(in_f)
+            writer = PyPDF2.PdfWriter()
 
-print(f"Rotated pages saved to {output_path}")
+            total_pages = len(reader.pages)
+            page_pad = len(str(total_pages))
+
+            for page_idx, page in enumerate(reader.pages, start=1):
+                page_prompt = (
+                    f"\t[{page_idx:0{page_pad}}/{total_pages}] "
+                    "Rotate 90/180/270 or skip (blank = skip)? "
+                )
+                while True:
+                    user_input = input(page_prompt).strip()
+                    if user_input in ("", "skip", "s"):
+                        break
+                    elif user_input in ("90", "9"):
+                        page.rotate(90)
+                        break
+                    elif user_input in ("180", "18"):
+                        page.rotate(180)
+                        break
+                    elif user_input in ("270", "27"):
+                        page.rotate(270)
+                        break
+                    else:
+                        print(
+                            "\tInvalid input. Please enter 90/180/270, skip, or blank to skip."
+                        )
+
+                writer.add_page(page)
+
+        # Write the rotated PDF back out (overwriting original)
+        with open(input_path, "wb") as out_f:
+            writer.write(out_f)
+
+        updated_msg = f"Updated '{pdf_file}'"
+        clear_line = "\r" + " " * len(prompt) + "\r" + updated_msg + "\n"
+        sys.stdout.write(clear_line)
+        sys.stdout.flush()
+
+    print("\nAll done.")
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Rotate pages in PDF files interactively.",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    parser.add_argument(
+        "-f", "--folder", required=True, help="Path to the folder containing PDF files."
+    )
+
+    args = parser.parse_args()
+    directory = args.folder
+
+    if not os.path.isdir(directory):
+        print(f"Error: '{directory}' is not a valid directory.")
+        return
+
+    process_pdfs(directory)
+
+
+if __name__ == "__main__":
+    main()
