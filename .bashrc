@@ -201,3 +201,9 @@ if [ -d "$FNM_PATH" ]; then
     export PATH="$FNM_PATH:$PATH"
     eval "$(fnm env)"
 fi
+
+# Configure Nix Home Manager
+if [ -e "$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh" ]; then
+    # shellcheck disable=SC1091
+    . "$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh"
+fi
