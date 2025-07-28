@@ -26,6 +26,7 @@
 
     pkgs.bat
     pkgs.eza
+    pkgs.shfmt
   ];
 
   # Home Manager is pretty good at managing dotfiles. The primary way to manage
