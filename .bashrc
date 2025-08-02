@@ -226,14 +226,12 @@ else
         package_manager="dnf"
     fi
 
-    cat <<-HEREDOC
-Oh-My-Posh not found. https://ohmyposh.dev/docs/installation/prompt
-Install cmd:
+    echo "Oh-My-Posh not found. https://ohmyposh.dev/docs/installation/prompt"
+    echo "Install cmd:"
+    echo
+    echo "   sudo $package_manager install -y curl unzip"
+    echo "   curl -s https://ohmyposh.dev/install.sh | bash -s"
 
-    sudo $package_manager install -y curl unzip
-    curl -s https://ohmyposh.dev/install.sh | bash -s
-
-HEREDOC
     # Custom prompt
     # [HH:MM:SS][ExitCode][Hostname]@Username:WorkingDirectory$_
     export PS1='[\[\e[32m\]\t\[\e[0m\]][\[\e[91m\]$?\[\e[0m\]]\[\e[35m\]\h\[\e[0m\]@\[\e[36m\]\u\[\e[0m\]:\[\e[33m\]\w\[\e[0m\]\\$\[\e[35m\] \[\e[0m\]'
