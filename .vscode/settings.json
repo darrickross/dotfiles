@@ -33,6 +33,7 @@
     "pkgs",
     "rprompt",
     "rxvt",
+    "SESS",
     "setaf",
     "setf",
     "shfmt",
