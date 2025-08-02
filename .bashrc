@@ -202,6 +202,12 @@ if [ -d "$FNM_PATH" ]; then
     eval "$(fnm env)"
 fi
 
+# Include nix in my shell if it exists
+if [ -e "$HOME/.nix-profile/etc/profile.d/nix.sh" ]; then
+    # shellcheck disable=SC1091
+    . "$HOME/.nix-profile/etc/profile.d/nix.sh";
+fi
+
 # Configure Nix Home Manager
 if [ -e "$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh" ]; then
     # shellcheck disable=SC1091
