@@ -11,6 +11,50 @@ case $- in
 *) return ;;
 esac
 
+# How to install and apply nix home-manager
+print_help_msg_install_home_manager() {
+    echo
+    echo "This shell is not managed by Nix Home-Manager flake"
+    echo "Install and use Nix Home-Manager flake using the instructions:"
+
+    COUNT=1
+
+    if ! command -v nix >/dev/null 2>&1; then
+        echo
+        echo "$COUNT) Install Nix:"
+        echo "   curl -L https://nixos.org/nix/install | sh"
+        ((COUNT++))
+    fi
+
+    if ! nix-channel --list | grep -q '^home-manager'; then
+        echo
+        echo "$COUNT) Add Home Manager Nix Channel"
+        echo "   nix-channel --add https://github.com/nix-community/home-manager/archive/release-25.11.tar.gz home-manager && nix-channel --update"
+        ((COUNT++))
+    fi
+
+    if ! command -v home-manager >/dev/null 2>&1; then
+        echo
+        echo "$COUNT) Install Home Manager"
+        echo "   nix-shell '<home-manager>' -A install"
+        ((COUNT++))
+    fi
+
+    # if [ -z "$__HM_SESS_VARS_SOURCED" ]; then
+    #     echo "NOT a home-manager"
+    # fi
+
+    echo
+    echo "$COUNT) Run Home Manager via flakes:"
+    echo "   home-manager switch --flake ~/projects/dotfiles/.config/home-manager#$(whoami) && exec \$SHELL -l"
+    echo
+    echo "Make sure to to remove some conflicting files first:"
+    echo "   rm ~/.bash_profile"
+    echo "   rm ~/.bashrc"
+    echo "   rm ~/.profile"
+    echo
+}
+
 # don't put duplicate lines or lines starting with space in the history.
 # See bash(1) for more options
 export HISTCONTROL=ignoreboth:erasedups
@@ -182,14 +226,12 @@ else
         package_manager="dnf"
     fi
 
-    cat <<-HEREDOC
-Oh-My-Posh not found. https://ohmyposh.dev/docs/installation/prompt
-Install cmd:
+    echo "Oh-My-Posh not found. https://ohmyposh.dev/docs/installation/prompt"
+    echo "Install cmd:"
+    echo
+    echo "   sudo $package_manager install -y curl unzip"
+    echo "   curl -s https://ohmyposh.dev/install.sh | bash -s"
 
-    sudo $package_manager install -y curl unzip
-    curl -s https://ohmyposh.dev/install.sh | bash -s
-
-HEREDOC
     # Custom prompt
     # [HH:MM:SS][ExitCode][Hostname]@Username:WorkingDirectory$_
     export PS1='[\[\e[32m\]\t\[\e[0m\]][\[\e[91m\]$?\[\e[0m\]]\[\e[35m\]\h\[\e[0m\]@\[\e[36m\]\u\[\e[0m\]:\[\e[33m\]\w\[\e[0m\]\\$\[\e[35m\] \[\e[0m\]'
@@ -200,4 +242,25 @@ FNM_PATH="/home/itsjustmech/.local/share/fnm"
 if [ -d "$FNM_PATH" ]; then
     export PATH="$FNM_PATH:$PATH"
     eval "$(fnm env)"
+fi
+
+# Include nix in my shell if it exists
+if [ -e "$HOME/.nix-profile/etc/profile.d/nix.sh" ]; then
+    # shellcheck disable=SC1091
+    . "$HOME/.nix-profile/etc/profile.d/nix.sh"
+fi
+
+# Configure Nix Home Manager
+if [ -e "$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh" ]; then
+    # Home Manager is already active in this shell
+    # shellcheck disable=SC1091
+    . "$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh"
+fi
+
+# Check if the shell is currently managed by home-manager
+if [[ -L "$HOME/.bashrc" ]]; then
+    LINK_TARGET=$(readlink "$HOME/.bashrc")
+    if [[ "$LINK_TARGET" != /nix/store/*-home-manager-files/.bashrc ]]; then
+        print_help_msg_install_home_manager
+    fi
 fi

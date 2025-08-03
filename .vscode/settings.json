@@ -9,6 +9,7 @@
     "dotfiles",
     "erasedups",
     "executiontime",
+    "Fantasque",
     "fgrep",
     "Gitschooldude",
     "gpgconf",
@@ -23,13 +24,19 @@
     "lesspipe",
     "libpam",
     "lrwxrwxrwx",
+    "nerdfonts",
+    "nixos",
+    "nixpkgs",
     "ohmyposh",
     "openpgp",
     "pdfs",
+    "pkgs",
     "rprompt",
     "rxvt",
+    "SESS",
     "setaf",
     "setf",
+    "shfmt",
     "SHLVL",
     "signingkey",
     "vdir",
@@ -51,6 +58,8 @@
     "*.ssh_config": "ssh_config",
     ".stow-local-ignore": "ignore"
   },
+  // Shellformater v7.2.8 has problems, work around is to downgrade to v7.2.5
+  "shellformat.path": "/home/itsjustmech/.nix-profile/bin/shfmt",
   "[jsonc]": {
     "editor.tabSize": 2,
     "editor.insertSpaces": true
