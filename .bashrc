@@ -23,21 +23,21 @@ print_help_msg_install_home_manager() {
         echo
         echo "$COUNT) Install Nix:"
         echo "   curl -L https://nixos.org/nix/install | sh"
-        (( COUNT++ ))
+        ((COUNT++))
     fi
 
     if ! nix-channel --list | grep -q '^home-manager'; then
         echo
         echo "$COUNT) Add Home Manager Nix Channel"
         echo "   nix-channel --add https://github.com/nix-community/home-manager/archive/release-25.11.tar.gz home-manager && nix-channel --update"
-        (( COUNT++ ))
+        ((COUNT++))
     fi
 
     if ! command -v home-manager >/dev/null 2>&1; then
         echo
         echo "$COUNT) Install Home Manager"
         echo "   nix-shell '<home-manager>' -A install"
-        (( COUNT++ ))
+        ((COUNT++))
     fi
 
     # if [ -z "$__HM_SESS_VARS_SOURCED" ]; then
@@ -247,7 +247,7 @@ fi
 # Include nix in my shell if it exists
 if [ -e "$HOME/.nix-profile/etc/profile.d/nix.sh" ]; then
     # shellcheck disable=SC1091
-    . "$HOME/.nix-profile/etc/profile.d/nix.sh";
+    . "$HOME/.nix-profile/etc/profile.d/nix.sh"
 fi
 
 # Configure Nix Home Manager
