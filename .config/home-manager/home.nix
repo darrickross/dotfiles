@@ -41,7 +41,7 @@
 
   programs.bash.shellAliases = {
     cat = "bat";
-    ls = "eza";
+    ls = "eza --git";
   };
 
   # Home Manager can also manage your environment variables through
