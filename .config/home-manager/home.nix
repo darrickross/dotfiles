@@ -30,6 +30,7 @@
     pkgs.python313
     pkgs.python313Packages.ansible-core # vscode plugin: redhat.ansible
     pkgs.python313Packages.black # vscode plugin: ms-python.black-formatter
+    pkgs.python313Packages.cfn-lint # vscode plugin: kddejong.vscode-cfn-lint
     pkgs.shellcheck # vscode plugin: timonwong.shellcheck
     pkgs.shfmt # vscode plugin: foxundermoon.shell-format
   ];
