@@ -26,7 +26,7 @@
 
     pkgs.bat
     pkgs.eza
-    pkgs.shfmt
+    pkgs.shfmt # vscode plugin: foxundermoon.shell-format
   ];
 
   # Home Manager is pretty good at managing dotfiles. The primary way to manage
