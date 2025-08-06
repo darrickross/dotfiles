@@ -27,6 +27,8 @@
     pkgs.bat
     pkgs.eza
     pkgs.nixfmt-rfc-style # vscode plugin: jnoortheen.nix-ide
+    pkgs.python313
+    pkgs.python313Packages.black # vscode plugin: ms-python.black-formatter
     pkgs.shellcheck # vscode plugin: timonwong.shellcheck
     pkgs.shfmt # vscode plugin: foxundermoon.shell-format
   ];
