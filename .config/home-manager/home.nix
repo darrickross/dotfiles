@@ -26,6 +26,7 @@
 
     pkgs.bat
     pkgs.eza
+    pkgs.nixfmt-rfc-style # vscode plugin: jnoortheen.nix-ide
     pkgs.shellcheck # vscode plugin: timonwong.shellcheck
     pkgs.shfmt # vscode plugin: foxundermoon.shell-format
   ];
