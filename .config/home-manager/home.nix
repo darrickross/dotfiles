@@ -26,6 +26,7 @@
 
     pkgs.bat
     pkgs.eza
+    pkgs.shellcheck # vscode plugin: timonwong.shellcheck
     pkgs.shfmt # vscode plugin: foxundermoon.shell-format
   ];
 
