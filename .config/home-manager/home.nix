@@ -26,7 +26,16 @@
 
     pkgs.bat
     pkgs.eza
-    pkgs.shfmt
+    pkgs.jq
+    pkgs.nixfmt-rfc-style # vscode plugin: jnoortheen.nix-ide
+    pkgs.oh-my-posh
+    pkgs.python313
+    pkgs.python313Packages.ansible-core # vscode plugin: redhat.ansible
+    pkgs.python313Packages.black # vscode plugin: ms-python.black-formatter
+    pkgs.python313Packages.cfn-lint # vscode plugin: kddejong.vscode-cfn-lint
+    pkgs.shellcheck # vscode plugin: timonwong.shellcheck
+    pkgs.shfmt # vscode plugin: foxundermoon.shell-format
+    pkgs.yq
   ];
 
   # Home Manager is pretty good at managing dotfiles. The primary way to manage
@@ -41,7 +50,8 @@
 
   programs.bash.shellAliases = {
     cat = "bat";
-    ls = "eza";
+    ls = "eza --git";
+    hms = "home-manager switch && exec \$SHELL -l";
   };
 
   # Home Manager can also manage your environment variables through
