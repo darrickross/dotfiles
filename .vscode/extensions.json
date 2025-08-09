@@ -1,13 +1,13 @@
 {
   "recommendations": [
+    "brunnerh.insert-unicode",
     "davidanson.vscode-markdownlint",
-    "yahyabatulu.vscode-markdown-alert",
-    "oderwat.indent-rainbow",
-    "streetsidesoftware.code-spell-checker",
     "foxundermoon.shell-format",
-    "timonwong.shellcheck",
+    "oderwat.indent-rainbow",
     "shardulm94.trailing-spaces",
+    "streetsidesoftware.code-spell-checker",
     "tamasfe.even-better-toml",
-    "brunnerh.insert-unicode"
+    "timonwong.shellcheck",
+    "yahyabatulu.vscode-markdown-alert"
   ]
 }
