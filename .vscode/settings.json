@@ -64,6 +64,7 @@
     "*.ssh_config": "ssh_config",
     ".stow-local-ignore": "ignore"
   },
+  "nix.formatterPath": "nixfmt",
   // Shellformater v7.2.8 has problems, work around is to downgrade to v7.2.5
   "shellformat.path": "/home/itsjustmech/.nix-profile/bin/shfmt",
   "[jsonc]": {
@@ -74,6 +75,11 @@
     "editor.tabSize": 2,
     "editor.insertSpaces": true,
     "editor.defaultFormatter": "DavidAnson.vscode-markdownlint"
+  },
+  "[nix]": {
+    "editor.tabSize": 2,
+    "editor.insertSpaces": true,
+    "editor.defaultFormatter": "jnoortheen.nix-ide"
   },
   "[shellscript]": {
     "editor.tabSize": 4,
