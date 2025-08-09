@@ -7,12 +7,19 @@
     home-manager.inputs.nixpkgs.follows = "nixpkgs";
   };
 
-  outputs = { self, nixpkgs, home-manager, ... }:
+  outputs =
+    {
+      self,
+      nixpkgs,
+      home-manager,
+      ...
+    }:
     let
       system = "x86_64-linux";
       # import pkgs for that system
       pkgs = import nixpkgs { inherit system; };
-    in {
+    in
+    {
       homeConfigurations = {
         itsjustmech = home-manager.lib.homeManagerConfiguration {
           inherit pkgs;
