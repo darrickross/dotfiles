@@ -27,7 +27,6 @@
     pkgs.bat
     pkgs.eza
     pkgs.jq
-    pkgs.yq
     pkgs.nixfmt-rfc-style # vscode plugin: jnoortheen.nix-ide
     pkgs.oh-my-posh
     pkgs.python313
@@ -36,6 +35,7 @@
     pkgs.python313Packages.cfn-lint # vscode plugin: kddejong.vscode-cfn-lint
     pkgs.shellcheck # vscode plugin: timonwong.shellcheck
     pkgs.shfmt # vscode plugin: foxundermoon.shell-format
+    pkgs.yq
   ];
 
   # Home Manager is pretty good at managing dotfiles. The primary way to manage
