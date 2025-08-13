@@ -31,10 +31,10 @@
     pkgs.nixfmt-rfc-style # vscode plugin: jnoortheen.nix-ide
     pkgs.oh-my-posh
     (pkgs.python313.withPackages (py: [
-      py.ansible-core
-      py.black
-      py.cfn-lint
-      py.pypdf2
+      py.ansible-core # vscode plugin: redhat.ansible
+      py.black # vscode plugin: ms-python.black-formatter
+      py.cfn-lint # vscode plugin: kddejong.vscode-cfn-lint
+      py.pypdf2 # dotfiles/scripts/pdf/<multiple>
     ]))
     pkgs.shellcheck # vscode plugin: timonwong.shellcheck
     pkgs.shfmt # vscode plugin: foxundermoon.shell-format
