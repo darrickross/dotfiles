@@ -34,6 +34,7 @@
       py.ansible-core # vscode plugin: redhat.ansible
       py.black # vscode plugin: ms-python.black-formatter
       py.cfn-lint # vscode plugin: kddejong.vscode-cfn-lint
+      py.pillow # dotfiles/scripts/pdf/convert_tif_jpg_to_pdf.py
       py.pypdf2 # dotfiles/scripts/pdf/<multiple>
     ]))
     pkgs.shellcheck # vscode plugin: timonwong.shellcheck
