@@ -30,11 +30,11 @@
     pkgs.gh # github cli
     pkgs.nixfmt-rfc-style # vscode plugin: jnoortheen.nix-ide
     pkgs.oh-my-posh
-    (pkgs.python313.withPackages (ps: [
-      ps.ansible-core
-      ps.black
-      ps.cfn-lint
-      ps.pypdf2
+    (pkgs.python313.withPackages (py: [
+      py.ansible-core
+      py.black
+      py.cfn-lint
+      py.pypdf2
     ]))
     pkgs.shellcheck # vscode plugin: timonwong.shellcheck
     pkgs.shfmt # vscode plugin: foxundermoon.shell-format
