@@ -35,6 +35,7 @@
     "openpgp",
     "pdfs",
     "pkgs",
+    "pypdf",
     "rprompt",
     "rxvt",
     "SESS",
