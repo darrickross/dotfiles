@@ -27,6 +27,7 @@
     pkgs.bat
     pkgs.eza
     pkgs.jq
+    pkgs.gh # github cli
     pkgs.nixfmt-rfc-style # vscode plugin: jnoortheen.nix-ide
     pkgs.oh-my-posh
     (pkgs.python313.withPackages (ps: [
