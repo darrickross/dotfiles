@@ -33,6 +33,7 @@
     "nixpkgs",
     "ohmyposh",
     "openpgp",
+    "opentofu",
     "pdfs",
     "pkgs",
     "pypdf",

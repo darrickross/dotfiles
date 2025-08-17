@@ -39,35 +39,36 @@
     ]))
     shellcheck # vscode plugin: timonwong.shellcheck
     shfmt # vscode plugin: foxundermoon.shell-format
-    (terraform.overrideAttrs (old: {
-      # Since this package comes directly from a GitHub fetch,
-      # we can pull a specific version but its a bit weird to do this
-      #
-      # 1) GitHub repo, owner, and revisions/tag used:
-      #
-      #     nix edit nixpkgs#terraform | grep src -A 10
-      #
-      # NOTE: This must say "src = fetchFromGitHub", otherwise its a different method...
-      #
-      # 2) The url nix will use to fetch the package also has the above info in the url technically...
-      #
-      #     nix derivation show "github:NixOS/nixpkgs?config.allowUnfree=true#terraform.src" | jq '.[].env.urls' -r
-      #
-      # 3) Get the sha256 hash
-      #
-      #     nix hash convert --hash-algo sha256 --to sri $(nix-prefetch-url --unpack --type sha256 https://github.com/hashicorp/terraform/archive/v1.11.4.tar.gz 2>/dev/null)
-      #
-      # 4) vendorHash, ngl I just don't include it, and if it errors it will tell you what it wants, then fill that in...
-      #
-      version = "1.11.4";
-      src = pkgs.fetchFromGitHub {
-        owner = "hashicorp";
-        repo = "terraform";
-        rev = "v1.11.4";
-        sha256 = "sha256-VGptJz+MbJ8nJRGUW9LzX6IDLYbjI5tK40ZhkZCGVf0=";
-      };
-      vendorHash = "sha256-pDtWGDKEnYq4wJYG+Rr5C1pWN/X92P+wvHrNm0Ldh+8=";
-    }))
+    # (terraform.overrideAttrs (old: {
+    #   # Since this package comes directly from a GitHub fetch,
+    #   # we can pull a specific version but its a bit weird to do this
+    #   #
+    #   # 1) GitHub repo, owner, and revisions/tag used:
+    #   #
+    #   #     nix edit nixpkgs#terraform | grep src -A 10
+    #   #
+    #   # NOTE: This must say "src = fetchFromGitHub", otherwise its a different method...
+    #   #
+    #   # 2) The url nix will use to fetch the package also has the above info in the url technically...
+    #   #
+    #   #     nix derivation show "github:NixOS/nixpkgs?config.allowUnfree=true#terraform.src" | jq '.[].env.urls' -r
+    #   #
+    #   # 3) Get the sha256 hash
+    #   #
+    #   #     nix hash convert --hash-algo sha256 --to sri $(nix-prefetch-url --unpack --type sha256 https://github.com/hashicorp/terraform/archive/v1.11.4.tar.gz 2>/dev/null)
+    #   #
+    #   # 4) vendorHash, ngl I just don't include it, and if it errors it will tell you what it wants, then fill that in...
+    #   #
+    #   version = "1.11.4";
+    #   src = pkgs.fetchFromGitHub {
+    #     owner = "hashicorp";
+    #     repo = "terraform";
+    #     rev = "v1.11.4";
+    #     sha256 = "sha256-VGptJz+MbJ8nJRGUW9LzX6IDLYbjI5tK40ZhkZCGVf0=";
+    #   };
+    #   vendorHash = "sha256-pDtWGDKEnYq4wJYG+Rr5C1pWN/X92P+wvHrNm0Ldh+8=";
+    # }))
+    opentofu
     yq
   ];
 
