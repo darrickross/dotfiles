@@ -73,11 +73,11 @@
   ];
 
   # Packages that are allowed to be "Unfree"
-  nixpkgs.config.allowUnfreePredicate =
-    pkg:
-    builtins.elem (pkgs.lib.getName pkg) [
-      "terraform"
-    ];
+  # nixpkgs.config.allowUnfreePredicate =
+  #   pkg:
+  #   builtins.elem (pkgs.lib.getName pkg) [
+  #     "terraform"
+  #   ];
 
   # Home Manager is pretty good at managing dotfiles. The primary way to manage
   # plain files is through 'home.file'.
