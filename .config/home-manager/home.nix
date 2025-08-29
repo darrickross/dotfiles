@@ -24,6 +24,7 @@
     # # fonts?
     # (nerdfonts.override { fonts = [ "FantasqueSansMono" ]; })
 
+    ansible-lint
     bat
     eza
     jq
