@@ -31,6 +31,7 @@
     gh # github cli
     nixfmt-rfc-style # vscode plugin: jnoortheen.nix-ide
     oh-my-posh
+    opentofu
     (python313.withPackages (py: [
       py.ansible-core # vscode plugin: redhat.ansible
       py.black # vscode plugin: ms-python.black-formatter
@@ -69,7 +70,6 @@
     #   };
     #   vendorHash = "sha256-pDtWGDKEnYq4wJYG+Rr5C1pWN/X92P+wvHrNm0Ldh+8=";
     # }))
-    opentofu
     yq
   ];
 
