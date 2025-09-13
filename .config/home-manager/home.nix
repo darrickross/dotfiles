@@ -70,6 +70,7 @@
     #   };
     #   vendorHash = "sha256-pDtWGDKEnYq4wJYG+Rr5C1pWN/X92P+wvHrNm0Ldh+8=";
     # }))
+    tldr
     yq
   ];
 
