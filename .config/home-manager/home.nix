@@ -27,6 +27,7 @@
     ansible-lint
     bat
     eza
+    ffmpeg # scripts/video/rename-video-metadata.sh
     jq
     gh # github cli
     nixfmt-rfc-style # vscode plugin: jnoortheen.nix-ide
