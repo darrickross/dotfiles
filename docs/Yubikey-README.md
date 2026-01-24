@@ -1,5 +1,13 @@
 # Setting Up Yubikey on a New Computer
 
+## Linux
+
+### SSH Resident Key `ed25519-sk`
+
+   ```bash
+   ssh-keygen -t ed25519-sk -O resident -O verify-required
+   ```
+
 ## Windows
 
 ### SSH Resident Key
