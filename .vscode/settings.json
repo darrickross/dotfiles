@@ -40,6 +40,7 @@
     "pdfs",
     "pkgs",
     "pypdf",
+    "readlink",
     "rprompt",
     "rxvt",
     "SESS",

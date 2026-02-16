@@ -97,6 +97,7 @@
     cat = "bat";
     ls = "eza --git";
     hms = "home-manager switch && exec \$SHELL -l";
+    hmu = "nix flake update --flake $(dirname $(readlink -f ~/.config/home-manager/flake.nix))";
   };
 
   # Home Manager can also manage your environment variables through
