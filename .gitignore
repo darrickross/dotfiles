@@ -1,0 +1,2 @@
+# Bitwarden secrets — encrypted file lives here, never committed
+.local/secrets/
