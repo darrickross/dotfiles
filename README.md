@@ -492,6 +492,26 @@ age-plugin-yubikey --help
 
 ---
 
+## Bitwarden Setup
+
+### `homelab-cli-secrets` Secure Note
+
+The `bw-bootstrap-secrets` script fetches a Bitwarden Secure Note named **`homelab-cli-secrets`** from your *homelab* Bitwarden account. The Notes field must contain valid YAML in the following format:
+
+```yaml
+bw_client_id: "user.xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+bw_client_secret: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+bw_password: "your-bitwarden-master-password"
+```
+
+The `bw_client_id` and `bw_client_secret` come from the Bitwarden web vault under:
+**Account Settings → Security → API Key**
+
+> [!CAUTION]
+> These credentials are for the **homelab** Bitwarden account (the secondary account used for non-interactive API access), not your primary personal account.
+
+---
+
 ## Create your own `dotfiles` repository
 
 TODO

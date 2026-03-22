@@ -148,6 +148,17 @@
     # One-time bootstrap: pull credentials from the primary Bitwarden account,
     # encrypt them with sops + age (YubiKey touch required), and store at
     # ~/.local/secrets/bitwarden.yaml outside the git repo.
+    #
+    # The Bitwarden item "homelab-cli-secrets" must be a Secure Note whose
+    # Notes field contains valid YAML in the following format:
+    #
+    #   bw_client_id: "user.xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+    #   bw_client_secret: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    #   bw_password: "your-bitwarden-master-password"
+    #
+    # bw_client_id / bw_client_secret come from the Bitwarden web vault under:
+    #   Account Settings → Security → API Key → Client ID / Client Secret
+    # These are for the *homelab* Bitwarden account (not your primary account).
     ".local/bin/bw-bootstrap-secrets" = {
       executable = true;
       text = ''
