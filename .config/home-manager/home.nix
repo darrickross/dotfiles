@@ -127,6 +127,8 @@
           exit 1
         fi
 
+        echo "Make sure to touch the yubikey after entering the pin!"
+
         # Decrypt the secrets file (requires YubiKey touch)
         DECRYPTED=$(sops --decrypt "$SECRETS_FILE")
 
