@@ -221,7 +221,9 @@
   #  /etc/profiles/per-user/itsjustmech/etc/profile.d/hm-session-vars.sh
   #
   home.sessionVariables = {
-    # EDITOR = "emacs";
+    # This should contain the age-plugin-yubikey key info
+    # Output of `age-plugin-yubikey -i` and the slot the key is in
+    SOPS_AGE_KEY_FILE = "${config.home.homeDirectory}/.config/age/yubikey-identity.txt";
   };
 
   # Let Home Manager install and manage itself.
