@@ -30,6 +30,7 @@
     ffmpeg # scripts/video/rename-video-metadata.sh
     jq
     gh # github cli
+    mkvtoolnix
     nixfmt-rfc-style # vscode plugin: jnoortheen.nix-ide
     oh-my-posh
     opentofu
@@ -39,6 +40,7 @@
       py.cfn-lint # vscode plugin: kddejong.vscode-cfn-lint
       py.pillow # dotfiles/scripts/pdf/convert_tif_jpg_to_pdf.py
       py.pypdf2 # dotfiles/scripts/pdf/<multiple>
+      py.rich # dotfiles/scripts/video/rename-media.py
     ]))
     shellcheck # vscode plugin: timonwong.shellcheck
     shfmt # vscode plugin: foxundermoon.shell-format
