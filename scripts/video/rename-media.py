@@ -94,18 +94,21 @@ CODEC_NORMALIZE: dict[str, str] = {
 }
 
 # Regex for the fully-correct filename format
-# Tail is the optional " {edition-...}" or " {edition-...} - ptN" between codec and ext
+# Groups: 1=title, 2=year, 3=episode(optional, incl. name), 4=res, 5=codec, 6=tail(optional), 7=tail-suffix, 8=ext
+# Episode group captures e.g. " - s01e01" or " - s01e01-e05 - Episode Name"
 FULL_PATTERN = re.compile(
-    r"^(.+?)\s*\((\d{4})\)\.(4k|\d{3,4}p)\.([\w]+)( \{[^}]+\}( - pt\d+)?)?\.(mkv|mp4)$",
+    r"^(.+?)\s*\((\d{4})\)( - s\d+e[\de-]+(?:\s+-\s+[^.]+)?)?\.(4k|\d{3,4}p)\.([\w]+)( \{[^}]+\}( - pt\d+)?)?\.(mkv|mp4)$",
     re.IGNORECASE,
 )
 
 # Regexes for extracting individual parts from arbitrary filenames
-_RE_YEAR  = re.compile(r"\((\d{4})\)")
-_RE_RES   = re.compile(r"\b(4k|2160p|\d{3,4}p)\b", re.IGNORECASE)
-_RE_CODEC = re.compile(r"\b(h264|hevc|h265|x264|x265|av1|vp9|avc)\b", re.IGNORECASE)
+_RE_YEAR    = re.compile(r"\((\d{4})\)")
+_RE_RES     = re.compile(r"\b(4k|2160p|\d{3,4}p)\b", re.IGNORECASE)
+_RE_CODEC   = re.compile(r"\b(h264|hevc|h265|x264|x265|av1|vp9|avc)\b", re.IGNORECASE)
+# Episode: " - s01e01" or " - s01e01-e05 - Episode Name"
+_RE_EPISODE = re.compile(r"( - s\d+e[\de-]+(?:\s+-\s+[^()\[\]{}.]+)?)", re.IGNORECASE)
 # Tail: " {anything}" optionally followed by " - ptN", must be at end of stem
-_RE_TAIL  = re.compile(r"( \{[^}]+\}( - pt\d+)?)$")
+_RE_TAIL    = re.compile(r"( \{[^}]+\}( - pt\d+)?)$")
 
 
 # ---------------------------------------------------------------------------
@@ -121,7 +124,8 @@ class MediaFile:
     year: str | None = None
     resolution: str | None = None
     codec: str | None = None
-    tail: str = ""              # e.g. " {edition-Theatrical}" or " {edition-DC} - pt1"
+    episode: str = ""          # e.g. " - s01e01" or " - s01e01-e05"
+    tail: str = ""             # e.g. " {edition-Theatrical}" or " {edition-DC} - pt1"
     folder_match: bool | None = None  # None = not evaluated
     proposed_name: str | None = None
     missing_parts: list[str] = field(default_factory=list)
@@ -253,9 +257,10 @@ def analyze_file(path: Path, verbose: bool = False) -> MediaFile:
     if m:
         media.title = m.group(1).strip()
         media.year = m.group(2)
-        media.resolution = m.group(3).lower()
-        media.codec = m.group(4).lower()
-        media.tail = m.group(5) or ""
+        media.episode = m.group(3) or ""
+        media.resolution = m.group(4).lower()
+        media.codec = m.group(5).lower()
+        media.tail = m.group(6) or ""
         media.already_correct = True
         media.folder_match = folder_matches_title(path, media.title)
         if verbose:
@@ -268,7 +273,13 @@ def analyze_file(path: Path, verbose: bool = False) -> MediaFile:
         media.tail = tail_m.group(1)
         stem = stem[: tail_m.start()]
 
-    # Extract what we can from the (tail-stripped) filename
+    # Strip episode identifier (e.g. " - s01e01 - Episode Name")
+    ep_m = _RE_EPISODE.search(stem)
+    if ep_m:
+        media.episode = ep_m.group(1).rstrip()
+        stem = stem[: ep_m.start()] + stem[ep_m.end():]
+
+    # Extract what we can from the (tail+episode-stripped) filename
     year_m = _RE_YEAR.search(stem)
     res_m = _RE_RES.search(stem)
     codec_m = _RE_CODEC.search(stem)
@@ -309,7 +320,7 @@ def analyze_file(path: Path, verbose: bool = False) -> MediaFile:
     if media.title and media.resolution and media.codec:
         year_part = f" ({media.year})" if media.year else ""
         media.proposed_name = (
-            f"{media.title}{year_part}.{media.resolution}.{media.codec}{media.tail}.{ext}"
+            f"{media.title}{year_part}{media.episode}.{media.resolution}.{media.codec}{media.tail}.{ext}"
         )
     else:
         missing = media.missing_parts or ["title"]
@@ -359,6 +370,7 @@ def make_rich_table(files: list[MediaFile]) -> "Table":
     )
     table.add_column("Title", style="cyan", overflow="fold", ratio=3)
     table.add_column("YYYY", style="yellow", width=6, justify="center")
+    table.add_column("Episode", style="dim white", overflow="fold", ratio=2)
     table.add_column("RES", style="green", width=7, justify="center")
     table.add_column("ENC", style="magenta", width=7, justify="center")
     table.add_column("EXT", style="blue", width=5, justify="center")
@@ -394,9 +406,12 @@ def make_rich_table(files: list[MediaFile]) -> "Table":
             curr_cell = Text(f.path.name)
             prop_cell = Text("—", style="dim")
 
+        episode_cell = Text(f.episode.lstrip(" -").strip(), style="dim white") if f.episode else Text("", style="dim")
+
         table.add_row(
             f.title or Text("?", style="bold red"),
             year_cell,
+            episode_cell,
             res_cell,
             enc_cell,
             f.ext,
@@ -409,11 +424,12 @@ def make_rich_table(files: list[MediaFile]) -> "Table":
 
 
 def print_plain_table(files: list[MediaFile]) -> None:
-    headers = ["Title", "YYYY", "RES", "ENC", "EXT", "Edition", "Folder", "Current Filename", "Proposed Filename"]
+    headers = ["Title", "YYYY", "Episode", "RES", "ENC", "EXT", "Edition", "Folder", "Current Filename", "Proposed Filename"]
     rows = [
         [
             f.title or "?",
             f.year or "?",
+            f.episode.lstrip(" -").strip() if f.episode else "",
             f.resolution or "?",
             f.codec or "?",
             f.ext,
@@ -489,19 +505,14 @@ def main() -> None:
 
     term_w = (console.width if HAS_RICH and console else 80)
 
-    for path in all_files:
-        if args.verbose:
-            rel = path.relative_to(root)
-            if HAS_RICH:
-                console.print(f"[dim]  found: {rel}[/dim]")
-            else:
-                print(f"  {C.dim('found: ' + str(rel))}")
-        else:
+    for i, path in enumerate(all_files, 1):
+        if not args.verbose:
             rel = str(path.relative_to(root))
-            max_name = term_w - 14
+            label = f"  [{i}/{found_count}] "
+            max_name = term_w - len(label)
             if len(rel) > max_name:
                 rel = "\u2026" + rel[-(max_name - 1):]
-            sys.stdout.write(f"\r  Checking: {rel:<{max_name}}")
+            sys.stdout.write(f"\r{label}{rel:<{max_name}}")
             sys.stdout.flush()
 
         media = analyze_file(path, verbose=args.verbose)
