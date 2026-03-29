@@ -12,6 +12,7 @@ import re
 import subprocess
 import sys
 from dataclasses import dataclass, field
+from difflib import SequenceMatcher
 from pathlib import Path
 
 try:
@@ -318,6 +319,36 @@ def analyze_file(path: Path, verbose: bool = False) -> MediaFile:
 
 
 # ---------------------------------------------------------------------------
+# Diff highlighting
+# ---------------------------------------------------------------------------
+
+
+def build_diff_cells(current: str, proposed: str) -> tuple["Text", "Text"]:
+    """
+    Return (current_text, proposed_text) with character-level diff highlighting.
+      current:  unchanged=white  |  deleted/replaced=bold red
+      proposed: unchanged=white  |  inserted=bold green  |  replaced=bold yellow
+    """
+    matcher = SequenceMatcher(None, current, proposed, autojunk=False)
+    curr_text = Text()
+    prop_text = Text()
+    for tag, i1, i2, j1, j2 in matcher.get_opcodes():
+        c = current[i1:i2]
+        p = proposed[j1:j2]
+        if tag == "equal":
+            curr_text.append(c)
+            prop_text.append(p)
+        elif tag == "replace":
+            curr_text.append(c, style="bold red")
+            prop_text.append(p, style="bold yellow")
+        elif tag == "delete":
+            curr_text.append(c, style="bold red")
+        elif tag == "insert":
+            prop_text.append(p, style="bold green")
+    return curr_text, prop_text
+
+
+# ---------------------------------------------------------------------------
 # Table rendering
 # ---------------------------------------------------------------------------
 
@@ -334,6 +365,7 @@ def make_rich_table(files: list[MediaFile]) -> "Table":
     table.add_column("Edition", style="dim cyan", overflow="fold", ratio=2)
     table.add_column("Folder", width=8, justify="center")
     table.add_column("Current Filename", overflow="fold", ratio=4)
+    table.add_column("Proposed Filename", overflow="fold", ratio=4)
 
     for f in files:
         year_cell = (
@@ -356,6 +388,12 @@ def make_rich_table(files: list[MediaFile]) -> "Table":
         else:
             folder_cell = Text("NO", style="bold red")
 
+        if f.proposed_name:
+            curr_cell, prop_cell = build_diff_cells(f.path.name, f.proposed_name)
+        else:
+            curr_cell = Text(f.path.name)
+            prop_cell = Text("—", style="dim")
+
         table.add_row(
             f.title or Text("?", style="bold red"),
             year_cell,
@@ -364,13 +402,14 @@ def make_rich_table(files: list[MediaFile]) -> "Table":
             f.ext,
             edition_cell,
             folder_cell,
-            f.path.name,
+            curr_cell,
+            prop_cell,
         )
     return table
 
 
 def print_plain_table(files: list[MediaFile]) -> None:
-    headers = ["Title", "YYYY", "RES", "ENC", "EXT", "Edition", "Folder", "Current Filename"]
+    headers = ["Title", "YYYY", "RES", "ENC", "EXT", "Edition", "Folder", "Current Filename", "Proposed Filename"]
     rows = [
         [
             f.title or "?",
@@ -381,6 +420,7 @@ def print_plain_table(files: list[MediaFile]) -> None:
             f.tail.strip() if f.tail else "",
             ("OK" if f.folder_match else "NO") if f.folder_match is not None else "-",
             f.path.name,
+            f.proposed_name or "—",
         ]
         for f in files
     ]
@@ -434,9 +474,9 @@ def main() -> None:
     # ------------------------------------------------------------------
 
     if HAS_RICH:
-        console.print(f"\n[bold blue]Scanning:[/bold blue] {root}\n")
+        console.print(f"\n[bold blue]Scanning:[/bold blue] {root}")
     else:
-        print(f"\n{C.bold(C.blue('Scanning:'))} {root}\n")
+        print(f"\n{C.bold(C.blue('Scanning:'))} {root}")
 
     all_files = sorted(
         p for p in root.rglob("*") if p.suffix.lower() in (".mkv", ".mp4")
@@ -447,6 +487,8 @@ def main() -> None:
     to_rename: list[MediaFile] = []
     unresolvable: list[MediaFile] = []
 
+    term_w = (console.width if HAS_RICH and console else 80)
+
     for path in all_files:
         if args.verbose:
             rel = path.relative_to(root)
@@ -454,6 +496,13 @@ def main() -> None:
                 console.print(f"[dim]  found: {rel}[/dim]")
             else:
                 print(f"  {C.dim('found: ' + str(rel))}")
+        else:
+            rel = str(path.relative_to(root))
+            max_name = term_w - 14
+            if len(rel) > max_name:
+                rel = "\u2026" + rel[-(max_name - 1):]
+            sys.stdout.write(f"\r  Checking: {rel:<{max_name}}")
+            sys.stdout.flush()
 
         media = analyze_file(path, verbose=args.verbose)
 
@@ -472,6 +521,10 @@ def main() -> None:
             to_rename.append(media)
         else:
             already_ok.append(media)
+
+    if not args.verbose:
+        sys.stdout.write(f"\r{' ' * term_w}\r")
+        sys.stdout.flush()
 
     # ------------------------------------------------------------------
     # Scan summary
@@ -521,37 +574,6 @@ def main() -> None:
     else:
         print(f"\n{C.bold(C.yellow(header))}\n")
         print_plain_table(to_rename)
-
-    # ------------------------------------------------------------------
-    # Proposed renames
-    # ------------------------------------------------------------------
-
-    if HAS_RICH:
-        console.print("\n[bold]Proposed renames:[/bold]")
-    else:
-        print(f"\n{C.bold('Proposed renames:')}")
-
-    for f in to_rename:
-        notes: list[str] = []
-        if not f.year:
-            notes.append(
-                "[red]missing YYYY[/red]" if HAS_RICH else C.red("missing YYYY")
-            )
-        if f.folder_match is False:
-            notes.append(
-                "[yellow]folder name mismatch[/yellow]"
-                if HAS_RICH
-                else C.yellow("folder name mismatch")
-            )
-
-        if HAS_RICH:
-            note_str = f"  ({', '.join(notes)})" if notes else ""
-            console.print(f"  [dim]{f.path.name}[/dim]")
-            console.print(f"  [green]→ {f.proposed_name}[/green]{note_str}\n")
-        else:
-            note_str = f"  [{', '.join(notes)}]" if notes else ""
-            print(f"  {C.dim(f.path.name)}")
-            print(f"  {C.green('→ ' + (f.proposed_name or '?'))}{note_str}\n")
 
     # ------------------------------------------------------------------
     # Confirmation
