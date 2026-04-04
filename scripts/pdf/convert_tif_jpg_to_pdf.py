@@ -1,5 +1,7 @@
-from PIL import Image
+import argparse
 import os
+
+from PIL import Image
 
 
 def convert_each_image_to_pdf(input_folder, output_folder):
@@ -33,7 +35,21 @@ def convert_each_image_to_pdf(input_folder, output_folder):
             print(f"Converted {filename} → {output_path}")
 
 
-# Example usage:
-input_dir = "/mnt/c/Users/ItsJustMech/Desktop/temp"
-output_dir = "/mnt/c/Users/ItsJustMech/Desktop/temp"
-convert_each_image_to_pdf(input_dir, output_dir)
+def main():
+    parser = argparse.ArgumentParser(
+        description="Convert TIFF/JPG images to individual PDF files"
+    )
+    parser.add_argument("input_dir", help="Directory containing input images")
+    parser.add_argument(
+        "output_dir",
+        nargs="?",
+        help="Directory for output PDFs (default: same as input_dir)",
+    )
+    args = parser.parse_args()
+
+    output_dir = args.output_dir or args.input_dir
+    convert_each_image_to_pdf(args.input_dir, output_dir)
+
+
+if __name__ == "__main__":
+    main()
