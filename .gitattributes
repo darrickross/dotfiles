@@ -1,0 +1,13 @@
+# Enforce LF line endings for all files
+* text=auto eol=lf
+
+# Explicitly mark binary files as binary (no line ending conversion)
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.tif binary
+*.tiff binary
+*.pdf binary
+*.ico binary
+*.p12 binary
+*.pfx binary

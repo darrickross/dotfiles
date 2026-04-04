@@ -1,2 +1,50 @@
+# Secrets and credentials
+*.env
+.env*
+*credentials*
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa
+id_ed25519
+id_ecdsa
+*.secret
+*.secrets
 # Bitwarden secrets — encrypted file lives here, never committed
 .local/secrets/
+
+# SSH private keys (public keys and config are fine to track)
+.ssh/id_*
+.ssh/known_hosts
+
+# AWS credentials (config/profiles are fine, not actual keys)
+.aws/credentials
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor
+*.swp
+*.swo
+*~
+.idea/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.venv/
+venv/
+dist/
+build/
+
+# Node
+node_modules/
+
+# Nix build outputs
+result
+result-*

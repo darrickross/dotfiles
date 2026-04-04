@@ -31,6 +31,7 @@
     ffmpeg # scripts/video/rename-video-metadata.sh
     jq
     gh # github cli
+    mkvtoolnix
     nixfmt-rfc-style # vscode plugin: jnoortheen.nix-ide
     oh-my-posh
     opentofu
@@ -40,6 +41,7 @@
       py.cfn-lint # vscode plugin: kddejong.vscode-cfn-lint
       py.pillow # dotfiles/scripts/pdf/convert_tif_jpg_to_pdf.py
       py.pypdf2 # dotfiles/scripts/pdf/<multiple>
+      py.rich # dotfiles/scripts/video/rename-media.py
     ]))
     shellcheck # vscode plugin: timonwong.shellcheck
     shfmt # vscode plugin: foxundermoon.shell-format
@@ -215,6 +217,8 @@
     ls = "eza --git";
     hms = "home-manager switch && exec \$SHELL -l";
     hmu = "nix flake update --flake $(dirname $(readlink -f ~/.config/home-manager/flake.nix))";
+    rename-media = "python3 ~/projects/dotfiles/scripts/video/rename-media.py";
+    mkv-info = "python3 ~/projects/dotfiles/scripts/video/mkv-info.py";
   };
 
   # Home Manager can also manage your environment variables through
