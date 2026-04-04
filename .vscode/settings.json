@@ -74,7 +74,7 @@
   },
   "nix.formatterPath": "nixfmt",
   // Shellformater v7.2.8 has problems, work around is to downgrade to v7.2.5
-  "shellformat.path": "/home/itsjustmech/.nix-profile/bin/shfmt",
+  "shellformat.path": "shfmt",
   "[jsonc]": {
     "editor.tabSize": 2,
     "editor.insertSpaces": true
