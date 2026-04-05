@@ -106,7 +106,8 @@
     # age plugin discovery works by spawning an executable named
     # "age-plugin-<name>", so a shell alias won't work — it must be on PATH.
     ".local/bin/age-plugin-yubikey" = {
-      executable = true;
+      executable = true; # mode is read-only by the nix store; no chmod needed
+      force = true;
       text = ''
         #!/usr/bin/env bash
         exec "/mnt/c/Program Files/age-plugin-yubikey/age-plugin-yubikey.exe" "$@"
@@ -116,7 +117,8 @@
     # Unlock Bitwarden vault and emit a BW_SESSION token.
     # Usage: export BW_SESSION=$(bw-unlock)
     ".local/bin/bw-unlock" = {
-      executable = true;
+      executable = true; # mode is read-only by the nix store; no chmod needed
+      force = true;
       text = ''
         #!/usr/bin/env bash
         set -euo pipefail
@@ -177,7 +179,8 @@
     #   Account Settings → Security → API Key → Client ID / Client Secret
     # These are for the *homelab* Bitwarden account (not your primary account).
     ".local/bin/bw-bootstrap-secrets" = {
-      executable = true;
+      executable = true; # mode is read-only by the nix store; no chmod needed
+      force = true;
       text = ''
         #!/usr/bin/env bash
         set -euo pipefail
