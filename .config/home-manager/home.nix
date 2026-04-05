@@ -129,7 +129,8 @@
           exit 1
         fi
 
-        echo "Make sure to touch the yubikey after entering the pin!"
+        echo "Usage: export BW_SESSION=\$(bw-unlock)" >&2
+        echo "Make sure to touch the yubikey after entering the pin!" >&2
 
         # Decrypt the secrets file (requires YubiKey touch)
         DECRYPTED=$(sops --decrypt "$SECRETS_FILE")
@@ -138,14 +139,25 @@
         BW_CLIENTID=$(printf '%s\n' "$DECRYPTED" | yq '.bw_client_id')
         BW_CLIENTSECRET=$(printf '%s\n' "$DECRYPTED" | yq '.bw_client_secret')
         BW_PASSWORD=$(printf '%s\n' "$DECRYPTED" | yq '.bw_password')
+        BW_DEFAULT_ORGANIZATION=$(printf '%s\n' "$DECRYPTED" | yq '.bw_default_organization')
 
-        export BW_CLIENTID BW_CLIENTSECRET BW_PASSWORD
+        export BW_CLIENTID BW_CLIENTSECRET BW_PASSWORD BW_DEFAULT_ORGANIZATION
 
         # Login via API key — non-interactive, bypasses 2FA by design
         bw login --apikey --quiet 2>/dev/null || true
 
-        # Unlock vault and output session token
-        bw unlock --passwordenv BW_PASSWORD --raw
+        # Unlock vault and capture session token
+        SESSION=$(bw unlock --passwordenv BW_PASSWORD --raw)
+
+        # Verify the session is actually valid before returning it
+        STATUS=$(bw status --session "$SESSION" | jq -r '.status')
+        if [[ "$STATUS" != "unlocked" ]]; then
+          echo "Error: vault status is '$STATUS' after unlock — session may be invalid" >&2
+          exit 1
+        fi
+        echo "Vault unlocked successfully." >&2
+
+        echo "$SESSION"
       '';
     };
 
@@ -159,6 +171,7 @@
     #   bw_client_id: "user.xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
     #   bw_client_secret: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
     #   bw_password: "your-bitwarden-master-password"
+    #   bw_default_organization: "your-organization-id"
     #
     # bw_client_id / bw_client_secret come from the Bitwarden web vault under:
     #   Account Settings → Security → API Key → Client ID / Client Secret
