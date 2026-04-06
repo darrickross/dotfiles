@@ -26,7 +26,8 @@
 
     ansible-lint
     bat
-    bitwarden-cli # used by bw-unlock / bw-bootstrap-secrets
+    bitwarden-cli # used by bw-unlock / bw_sync_encrypted_secrets.sh
+    bws # authenticated via BWS_ACCESS_TOKEN from the secrets file
     eza
     ffmpeg # scripts/video/rename-video-metadata.sh
     jq
@@ -74,20 +75,21 @@
     #   };
     #   vendorHash = "sha256-pDtWGDKEnYq4wJYG+Rr5C1pWN/X92P+wvHrNm0Ldh+8=";
     # }))
-    sops # used by bw-unlock / bw-bootstrap-secrets
+    sops # used by bw_sync_encrypted_secrets.sh
     tree
     tldr
-    yq-go # used by bw-unlock / bw-bootstrap-secrets
+    yq-go # used by bw_sync_encrypted_secrets.sh
     # `yq` is a wrapper around `jq`
     # `yq-go` is a native yaml version
   ];
 
   # Packages that are allowed to be "Unfree"
-  # nixpkgs.config.allowUnfreePredicate =
-  #   pkg:
-  #   builtins.elem (pkgs.lib.getName pkg) [
-  #     "terraform"
-  #   ];
+  nixpkgs.config.allowUnfreePredicate =
+    pkg:
+    builtins.elem (pkgs.lib.getName pkg) [
+      "bws"
+      # "terraform"
+    ];
 
   # sops-nix: use YubiKey retired key slot as the age identity for decryption.
   # age-plugin-yubikey uses the 20 retired key management slots (1-20), not the
@@ -123,33 +125,18 @@
         #!/usr/bin/env bash
         set -euo pipefail
 
-        SECRETS_FILE="$HOME/.local/secrets/bitwarden.yaml"
+        echo "Usage: export BW_SESSION=\$(bw-unlock)" >&2
 
-        if [[ ! -f "$SECRETS_FILE" ]]; then
-          echo "Error: Secrets file not found at $SECRETS_FILE" >&2
-          echo "Run 'bw-bootstrap-secrets' to initialize it first." >&2
-          exit 1
+        # Check if already authenticated; if not, start an interactive login session
+        LOGIN_STATUS=$(bw status 2>/dev/null | jq -r '.status // "unauthenticated"')
+
+        if [[ "$LOGIN_STATUS" == "unauthenticated" ]]; then
+          echo "Not logged in — starting interactive login..." >&2
+          bw login >&2
         fi
 
-        echo "Usage: export BW_SESSION=\$(bw-unlock)" >&2
-        echo "Make sure to touch the yubikey after entering the pin!" >&2
-
-        # Decrypt the secrets file (requires YubiKey touch)
-        DECRYPTED=$(sops --decrypt "$SECRETS_FILE")
-
-        # Parse credentials from decrypted YAML
-        BW_CLIENTID=$(printf '%s\n' "$DECRYPTED" | yq '.bw_client_id')
-        BW_CLIENTSECRET=$(printf '%s\n' "$DECRYPTED" | yq '.bw_client_secret')
-        BW_PASSWORD=$(printf '%s\n' "$DECRYPTED" | yq '.bw_password')
-        BW_DEFAULT_ORGANIZATION=$(printf '%s\n' "$DECRYPTED" | yq '.bw_default_organization')
-
-        export BW_CLIENTID BW_CLIENTSECRET BW_PASSWORD BW_DEFAULT_ORGANIZATION
-
-        # Login via API key — non-interactive, bypasses 2FA by design
-        bw login --apikey --quiet 2>/dev/null || true
-
-        # Unlock vault and capture session token
-        SESSION=$(bw unlock --passwordenv BW_PASSWORD --raw)
+        # Unlock vault and capture session token (prompts for master password on stderr)
+        SESSION=$(bw unlock --raw)
 
         # Verify the session is actually valid before returning it
         STATUS=$(bw status --session "$SESSION" | jq -r '.status')
@@ -163,23 +150,17 @@
       '';
     };
 
-    # One-time bootstrap: pull credentials from the primary Bitwarden account,
-    # encrypt them with sops + age (YubiKey touch required), and store at
-    # ~/.local/secrets/bitwarden.yaml outside the git repo.
+    # Sync down the secret list from Bitwarden and re-encrypt it locally.
+    # Use this on first setup, or when the BWS access token or other secrets have
+    # been rotated and you need to refresh ~/.local/secrets/bitwarden.yaml.
     #
-    # The Bitwarden item "homelab-cli-secrets" must be a Secure Note whose
-    # Notes field contains valid YAML in the following format:
+    # Expects the Bitwarden item "local-machine-bws-secrets" to be a Secure Note
+    # whose Notes field contains valid YAML in the following format:
     #
-    #   bw_client_id: "user.xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-    #   bw_client_secret: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-    #   bw_password: "your-bitwarden-master-password"
-    #   bw_default_organization: "your-organization-id"
+    #   local_computer_machine_account_bws_access_token: "your-bws-access-token"
     #
-    # bw_client_id / bw_client_secret come from the Bitwarden web vault under:
-    #   Account Settings → Security → API Key → Client ID / Client Secret
-    # These are for the *homelab* Bitwarden account (not your primary account).
-    ".local/bin/bw-bootstrap-secrets" = {
-      executable = true; # mode is read-only by the nix store; no chmod needed
+    ".local/bin/bw_sync_encrypted_secrets.sh" = {
+      executable = true;
       force = true;
       text = ''
         #!/usr/bin/env bash
@@ -187,10 +168,16 @@
 
         SECRETS_FILE="$HOME/.local/secrets/bitwarden.yaml"
 
+        # If the secrets file already exists, ask the user before overwriting.
+        # Exit if they decline; shred the old file if they confirm.
         if [[ -f "$SECRETS_FILE" ]]; then
-          echo "Error: Secrets file already exists at $SECRETS_FILE" >&2
-          echo "Remove it first if you want to re-bootstrap." >&2
-          exit 1
+          read -r -p "Secrets file already exists at $SECRETS_FILE. Shred and replace it? [y/N] " CONFIRM
+          if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
+            echo "Aborted." >&2
+            exit 1
+          fi
+          shred -u "$SECRETS_FILE"
+          echo "Existing secrets file shredded."
         fi
 
         mkdir -p "$HOME/.local/secrets"
@@ -204,17 +191,17 @@
 
         # Write notes to a tmpfile inside the secrets dir so the path matches
         # the .sops.yaml creation rule and the YubiKey recipient is auto-selected.
-        TMPFILE=$(mktemp "$HOME/.local/secrets/.bootstrap.XXXXXX.yaml")
+        TMPFILE=$(mktemp "$HOME/.local/secrets/.sync.XXXXXX.yaml")
         trap 'shred -u "$TMPFILE" 2>/dev/null || rm -f "$TMPFILE"' EXIT
 
-        bw get item "homelab-cli-secrets" | jq -r '.notes' > "$TMPFILE"
+        bw get item "local-machine-bws-secrets" | jq -r '.notes' > "$TMPFILE"
 
         # Encrypt in place (requires YubiKey touch)
         sops --encrypt "$TMPFILE" > "$SECRETS_FILE"
         chmod 600 "$SECRETS_FILE"
 
         bw logout --quiet || true
-        echo "Successfully bootstrapped secrets to $SECRETS_FILE"
+        echo "Successfully synced secrets to $SECRETS_FILE"
       '';
     };
   };
