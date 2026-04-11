@@ -27,7 +27,7 @@
     ansible-lint
     bat
     eza
-    ffmpeg # scripts/video/rename-video-metadata.sh
+    # ffmpeg # no longer used
     jq
     gh # github cli
     mkvtoolnix
