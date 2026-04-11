@@ -30,7 +30,7 @@
     bws # authenticated via BWS_ACCESS_TOKEN from the secrets file
     eza
     # ffmpeg # no longer used
-    fnm
+    # fnm # Fast Node Manager - VSCode Plugin development?
     jq
     gh # github cli
     mkvtoolnix
