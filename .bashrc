@@ -238,9 +238,7 @@ else
 fi
 
 # Fast Simple Node Manager
-FNM_PATH="$HOME/.local/share/fnm"
-if [ -d "$FNM_PATH" ]; then
-    export PATH="$FNM_PATH:$PATH"
+if command -v fnm >/dev/null 2>&1; then
     eval "$(fnm env)"
 fi
 

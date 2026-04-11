@@ -28,6 +28,7 @@
     bat
     eza
     # ffmpeg # no longer used
+    fnm
     jq
     gh # github cli
     mkvtoolnix
