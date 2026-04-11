@@ -222,6 +222,7 @@
     hmu = "nix flake update --flake $(dirname $(readlink -f ~/.config/home-manager/flake.nix))";
     rename-media = "python3 ~/projects/dotfiles/scripts/video/rename-media.py";
     mkv-info = "python3 ~/projects/dotfiles/scripts/video/mkv-info.py";
+    mkv-scan = "python3 ~/projects/dotfiles/scripts/video/mkv-scan.py";
   };
 
   # Home Manager can also manage your environment variables through
