@@ -1,7 +1,7 @@
 import os
 import argparse
 import sys
-import PyPDF2
+from pypdf import PdfReader, PdfWriter
 
 
 def process_pdfs(directory):
@@ -29,8 +29,8 @@ def process_pdfs(directory):
 
         input_path = os.path.join(directory, pdf_file)
         with open(input_path, "rb") as in_f:
-            reader = PyPDF2.PdfReader(in_f)
-            writer = PyPDF2.PdfWriter()
+            reader = PdfReader(in_f)
+            writer = PdfWriter()
 
             total_pages = len(reader.pages)
             page_pad = len(str(total_pages))
