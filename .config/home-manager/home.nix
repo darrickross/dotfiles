@@ -34,7 +34,7 @@
     jq
     gh # github cli
     mkvtoolnix
-    nixfmt-rfc-style # vscode plugin: jnoortheen.nix-ide
+    nixfmt # vscode plugin: jnoortheen.nix-ide
     oh-my-posh
     opentofu
     (python313.withPackages (py: [
