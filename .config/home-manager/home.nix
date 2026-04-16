@@ -27,8 +27,8 @@
     ansible-lint
     bat
     eza
-    # ffmpeg # no longer used
-    fnm
+    ffmpeg # ffprobe used by rename-media.py
+    # fnm # Fast Node Manager - VSCode Plugin development?
     jq
     gh # github cli
     mkvtoolnix

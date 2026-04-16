@@ -145,16 +145,23 @@ class MediaFile:
 # ---------------------------------------------------------------------------
 
 
-def get_ffprobe_info(path: Path) -> tuple[str | None, str | None]:
-    """Return (codec, resolution) via ffprobe, or (None, None) on failure."""
+def get_ffprobe_info(path: Path) -> tuple[str | None, str | None, str | None]:
+    """Return (codec, resolution, error) via ffprobe. On failure, codec and resolution are None."""
     try:
+        base_args = [
+            "ffprobe",
+            "-v",
+            "error",
+            "-probesize",
+            "5000000",
+            "-analyzeduration",
+            "0",
+            "-select_streams",
+            "v:0",
+        ]
         r_codec = subprocess.run(
             [
-                "ffprobe",
-                "-v",
-                "error",
-                "-select_streams",
-                "v:0",
+                *base_args,
                 "-show_entries",
                 "stream=codec_name",
                 "-of",
@@ -167,11 +174,7 @@ def get_ffprobe_info(path: Path) -> tuple[str | None, str | None]:
         )
         r_height = subprocess.run(
             [
-                "ffprobe",
-                "-v",
-                "error",
-                "-select_streams",
-                "v:0",
+                *base_args,
                 "-show_entries",
                 "stream=height",
                 "-of",
@@ -186,14 +189,16 @@ def get_ffprobe_info(path: Path) -> tuple[str | None, str | None]:
         height_str = r_height.stdout.strip()
 
         if not codec_raw or not height_str:
-            return None, None
+            return None, None, "ffprobe found no video stream"
 
         codec = CODEC_NORMALIZE.get(codec_raw, codec_raw)
         height = int(height_str)
         res = "4k" if height >= 2160 else f"{height}p"
-        return codec, res
-    except Exception:
-        return None, None
+        return codec, res, None
+    except subprocess.TimeoutExpired:
+        return None, None, "ffprobe timed out"
+    except Exception as e:
+        return None, None, f"ffprobe error: {e}"
 
 
 # ---------------------------------------------------------------------------
@@ -297,9 +302,9 @@ def analyze_file(path: Path, verbose: bool = False) -> MediaFile:
     if not media.resolution or not media.codec:
         if verbose:
             print(f"  {C.cyan('ffprobe: ' + path.name)}")
-        ff_codec, ff_res = get_ffprobe_info(path)
+        ff_codec, ff_res, ff_err = get_ffprobe_info(path)
         if ff_codec is None:
-            media.skip_reason = "no video stream detected"
+            media.skip_reason = ff_err or "ffprobe found no video stream"
             return media
         if not media.codec:
             media.codec = ff_codec
@@ -493,6 +498,21 @@ def main() -> None:
     )
     args = parser.parse_args()
 
+    # ------------------------------------------------------------------
+    # Preflight checks
+    # ------------------------------------------------------------------
+
+    errors: list[str] = []
+    result = subprocess.run(["which", "ffprobe"], capture_output=True)
+    if result.returncode != 0:
+        errors.append(
+            "ffprobe not found — install ffmpeg (e.g. add 'ffmpeg' to home.nix packages)"
+        )
+    if errors:
+        for e in errors:
+            print(C.red(f"Error: {e}"))
+        sys.exit(1)
+
     root = Path(args.root).resolve()
     if not root.exists():
         print(C.red(f"Error: '{root}' does not exist."))
@@ -563,11 +583,10 @@ def main() -> None:
         console.print(f"  [yellow]Need renaming:[/yellow]    {len(to_rename)}")
         if unresolvable:
             console.print(f"  [red]Could not analyze:[/red] {len(unresolvable)}")
-            if args.verbose:
-                for f in unresolvable:
-                    console.print(
-                        f"    [red dim]• {f.path.name}: {f.skip_reason}[/red dim]"
-                    )
+            for f in unresolvable:
+                console.print(
+                    f"    [red dim]• {f.path.name}: {f.skip_reason}[/red dim]"
+                )
     else:
         print(C.bold("Scan Results"))
         print(f"  {C.cyan('Files found:       ' + str(found_count))}")
@@ -575,11 +594,8 @@ def main() -> None:
         print(f"  {C.yellow('Need renaming:     ' + str(len(to_rename)))}")
         if unresolvable:
             print(f"  {C.red('Could not analyze: ' + str(len(unresolvable)))}")
-            if args.verbose:
-                for f in unresolvable:
-                    print(
-                        f"    {C.red('• ' + f.path.name + ': ' + (f.skip_reason or ''))}"
-                    )
+            for f in unresolvable:
+                print(f"    {C.red('• ' + f.path.name + ': ' + (f.skip_reason or ''))}")
 
     if not to_rename:
         msg = "All files are already correctly named!"
