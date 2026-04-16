@@ -29,7 +29,7 @@
     bitwarden-cli # used by bw-unlock / bw_sync_encrypted_secrets.sh
     bws # authenticated via BWS_ACCESS_TOKEN from the secrets file
     eza
-    # ffmpeg # no longer used
+    ffmpeg # ffprobe used by rename-media.py
     # fnm # Fast Node Manager - VSCode Plugin development?
     jq
     gh # github cli
@@ -185,8 +185,6 @@
 
         # Interactive login with primary Bitwarden account
         echo "Log in to your primary Bitwarden account:"
-        bw login
-
         BW_SESSION=$(bw unlock --raw)
         export BW_SESSION
 
@@ -195,7 +193,7 @@
         TMPFILE=$(mktemp "$HOME/.local/secrets/.sync.XXXXXX.yaml")
         trap 'shred -u "$TMPFILE" 2>/dev/null || rm -f "$TMPFILE"' EXIT
 
-        bw get item "local-machine-bws-secrets" | jq -r '.notes' > "$TMPFILE"
+        bw get item "homelab-cli-secrets" | jq -r '.notes' > "$TMPFILE"
 
         # Encrypt in place (requires YubiKey touch)
         sops --encrypt "$TMPFILE" > "$SECRETS_FILE"
