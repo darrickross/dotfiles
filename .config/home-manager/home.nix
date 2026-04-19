@@ -212,6 +212,20 @@
 
   programs.bash.bashrcExtra = ''
     source ${../../.bashrc}
+
+    if [[ -z "''${_HM_CHECKED:-}" ]]; then
+      export _HM_CHECKED=1
+      _hm_profile="$HOME/.local/state/nix/profiles/home-manager"
+      if [[ -L "$_hm_profile" ]]; then
+        _hm_switch_time=$(stat -c %Y "$_hm_profile")
+        _hm_newer=$(find -L "$HOME/.config/home-manager" -name "*.nix" -newermt "@$_hm_switch_time" 2>/dev/null | head -1)
+        if [[ -n "$_hm_newer" ]]; then
+          echo "home-manager: config changed since last switch — run 'hms' to apply" >&2
+        fi
+        unset _hm_newer
+      fi
+      unset _hm_profile
+    fi
   '';
 
   programs.bash.shellAliases = {
