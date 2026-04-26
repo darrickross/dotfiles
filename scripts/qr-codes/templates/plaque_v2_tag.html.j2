@@ -12,6 +12,19 @@
 {%- endif -%}
 {%- endfor -%}
 {%- endmacro -%}
+
+{%- macro fit_size(text) -%}
+{%- set n = (text | string | length) -%}
+{%- if n <= 14 -%}6cqw
+{%- elif n <= 22 -%}4.8cqw
+{%- elif n <= 32 -%}3.8cqw
+{%- elif n <= 42 -%}3.2cqw
+{%- elif n <= 52 -%}2.8cqw
+{%- elif n <= 63 -%}2.4cqw
+{%- else -%}2cqw
+{%- endif -%}
+{%- endmacro -%}
+
 <!doctype html>
 <html lang="en">
 <head>
@@ -38,7 +51,7 @@
     border: 3px solid var(--ink);
     overflow: hidden;
     display: grid;
-    grid-template-columns: 45% 1fr;
+    grid-template-columns: 45% 55%;
     container-type: inline-size;
   }
   .qr-side {
@@ -57,11 +70,11 @@
   .text-side { padding: 5% 5%; display: flex; flex-direction: column; justify-content: center; gap: 6%; }
   .head-row { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid var(--ink); padding-bottom: 14px; gap: 16px; }
   .label-tiny { font-family: "JetBrains Mono", ui-monospace, monospace; text-transform: uppercase; font-size: 32px; letter-spacing: .18em; color: var(--muted); }
-  .greeting { font-family: "Architects Daughter", cursive; font-size: 57px; line-height: 1; margin-top: 4px; }
+  .greeting { font-family: "Architects Daughter", cursive; font-size: 57px; line-height: 1; margin-top: 4px; overflow-wrap: anywhere; }
   .wifi-icon { width: 81px; height: auto; flex: none; }
   .fields { display: flex; flex-direction: column; gap: 24px; }
   .field { display: flex; flex-direction: column; gap: 6px; }
-  .mono-value { font-family: "JetBrains Mono", monospace; font-size: 80px; font-weight: 600; word-break: break-all; line-height: 1.05; }
+  .mono-value { font-family: "JetBrains Mono", monospace; font-size: 80px; font-weight: 600; overflow-wrap: anywhere; line-height: 1.05; }
   @media print {
     @page { size: 14in 10in; margin: 0; }
     html, body { background: #fff; }
@@ -102,11 +115,11 @@
       <div class="fields">
         <div class="field">
           <div class="label-tiny">Network</div>
-          <div class="mono-value">{{ colorize(ssid) }}</div>
+          <div class="mono-value" style="font-size: {{ fit_size(ssid) }}">{{ colorize(ssid) }}</div>
         </div>
         <div class="field">
           <div class="label-tiny">Password</div>
-          <div class="mono-value">{{ colorize(password) }}</div>
+          <div class="mono-value" style="font-size: {{ fit_size(password) }}">{{ colorize(password) }}</div>
         </div>
       </div>
     </div>

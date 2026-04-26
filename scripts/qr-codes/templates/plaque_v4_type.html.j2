@@ -12,6 +12,19 @@
 {%- endif -%}
 {%- endfor -%}
 {%- endmacro -%}
+
+{%- macro fit_size(text) -%}
+{%- set n = (text | string | length) -%}
+{%- if n <= 14 -%}6cqw
+{%- elif n <= 22 -%}4.8cqw
+{%- elif n <= 32 -%}3.8cqw
+{%- elif n <= 42 -%}3.2cqw
+{%- elif n <= 52 -%}2.8cqw
+{%- elif n <= 63 -%}2.4cqw
+{%- else -%}2cqw
+{%- endif -%}
+{%- endmacro -%}
+
 <!doctype html>
 <html lang="en">
 <head>
@@ -35,11 +48,11 @@
     width: min(96vw, calc(96vh * 14 / 10));
     background: var(--paper);
     overflow: hidden;
-    display: grid; grid-template-columns: auto 1fr;
-    gap: 7%; padding: 6% 8%; align-items: center;
+    display: grid; grid-template-columns: 45% 55%;
+    gap: 0; padding: 6% 8%; align-items: center;
     container-type: inline-size;
   }
-  .qr-col { display: flex; flex-direction: column; align-items: center; gap: 3%; width: 430px; }
+  .qr-col { display: flex; flex-direction: column; align-items: center; gap: 3%; width: 100%; }
   .qr {
     aspect-ratio: 1 / 1; width: 100%;
     border: 2px solid var(--ink); background: #fff; padding: 8px;
@@ -48,14 +61,14 @@
   .scan-row { display: flex; align-items: center; gap: 8px; }
   .label-tiny { font-family: "JetBrains Mono", ui-monospace, monospace; text-transform: uppercase; font-size: 30px; letter-spacing: .22em; color: var(--muted); }
   .wifi-icon-sm { width: 32px; height: auto; }
-  .text-col { display: flex; flex-direction: column; }
+  .text-col { display: flex; flex-direction: column; padding-left: 7%; }
   .row {
     display: flex; flex-direction: column; gap: 8px;
     padding: 3% 0; border-bottom: 1.5px solid var(--ink);
   }
   .row:first-child { border-top: 1.5px solid var(--ink); }
   .row-label { flex: none; }
-  .row-value { font-family: "JetBrains Mono", monospace; font-size: 80px; line-height: 1; flex: 1; word-break: break-all; }
+  .row-value { font-family: "JetBrains Mono", monospace; font-size: 80px; line-height: 1; flex: 1; overflow-wrap: anywhere; }
 
   @media print {
     @page { size: 14in 10in; margin: 0; }
@@ -72,7 +85,7 @@
 
   .greeting-bar { display: flex; align-items: center; gap: 12px; }
   .greeting-bar .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); flex: none; }
-  .greeting-bar .greeting-text { font-family: "Caveat", cursive; font-size: 43px; line-height: 1.1; color: #3a342d; }
+  .greeting-bar .greeting-text { font-family: "Caveat", cursive; font-size: 43px; line-height: 1.1; color: #3a342d; overflow-wrap: anywhere; }
 
 </style>
 </head>
@@ -98,11 +111,11 @@
     <div class="text-col">
       <div class="row">
         <div class="row-label label-tiny">network</div>
-        <div class="row-value">{{ colorize(ssid) }}</div>
+        <div class="row-value" style="font-size: {{ fit_size(ssid) }}">{{ colorize(ssid) }}</div>
       </div>
       <div class="row">
         <div class="row-label label-tiny">password</div>
-        <div class="row-value">{{ colorize(password) }}</div>
+        <div class="row-value" style="font-size: {{ fit_size(password) }}">{{ colorize(password) }}</div>
       </div>
       <div class="greeting-bar" style="padding-top: 4%;">
         <span class="dot"></span>

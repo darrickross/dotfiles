@@ -12,6 +12,19 @@
 {%- endif -%}
 {%- endfor -%}
 {%- endmacro -%}
+
+{%- macro fit_size(text) -%}
+{%- set n = (text | string | length) -%}
+{%- if n <= 14 -%}6cqw
+{%- elif n <= 22 -%}4.8cqw
+{%- elif n <= 32 -%}3.8cqw
+{%- elif n <= 42 -%}3.2cqw
+{%- elif n <= 52 -%}2.8cqw
+{%- elif n <= 63 -%}2.4cqw
+{%- else -%}2cqw
+{%- endif -%}
+{%- endmacro -%}
+
 <!doctype html>
 <html lang="en">
 <head>
@@ -37,8 +50,8 @@
     position: relative;
     overflow: hidden;
     display: grid;
-    grid-template-columns: 1fr 1.1fr;
-    gap: 6%;
+    grid-template-columns: 45% 55%;
+    gap: 0;
     align-items: center;
     padding: 6% 7%;
   }
@@ -53,13 +66,13 @@
   .qr svg, .qr img { width: 100%; height: 100%; display: block; }
   .label-tiny { font-family: "JetBrains Mono", ui-monospace, monospace; text-transform: uppercase; font-size: 29px; letter-spacing: .18em; color: var(--muted); }
   .greeting-row { display: flex; align-items: center; gap: 16px; }
-  .greeting { font-family: "Caveat", cursive; font-size: 80px; line-height: 1; color: var(--ink); }
+  .greeting { font-family: "Caveat", cursive; font-size: 80px; line-height: 1; color: var(--ink); overflow-wrap: anywhere; }
   .squiggle { width: 100%; height: 10px;
     background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 8'><path d='M0 4 Q 7.5 1 15 4 T 30 4 T 45 4 T 60 4' fill='none' stroke='%231a1714' stroke-width='1.2'/></svg>");
     background-repeat: repeat-x; background-size: 60px 8px; }
   .field { display: flex; flex-direction: column; gap: 6px; }
-  .value { font-family: "JetBrains Mono", monospace; font-size: 80px; line-height: 1.05; padding-bottom: 8px; border-bottom: 2px solid var(--ink); word-break: break-all; }
-  .text-col { display: flex; flex-direction: column; gap: 5%; container-type: inline-size; }
+  .value { font-family: "JetBrains Mono", monospace; font-size: 80px; line-height: 1.05; padding-bottom: 8px; border-bottom: 2px solid var(--ink); overflow-wrap: anywhere; }
+  .text-col { display: flex; flex-direction: column; gap: 5%; container-type: inline-size; padding-left: 6%; }
   .plaque { container-type: inline-size; }
   .wifi-icon { width: 74px; height: auto; flex: none; }
   @media print {
@@ -100,11 +113,11 @@
       <div class="squiggle"></div>
       <div class="field">
         <div class="label-tiny">Network</div>
-        <div class="value">{{ colorize(ssid) }}</div>
+        <div class="value" style="font-size: {{ fit_size(ssid) }}">{{ colorize(ssid) }}</div>
       </div>
       <div class="field">
         <div class="label-tiny">Password</div>
-        <div class="value">{{ colorize(password) }}</div>
+        <div class="value" style="font-size: {{ fit_size(password) }}">{{ colorize(password) }}</div>
       </div>
     </div>
   </div>
