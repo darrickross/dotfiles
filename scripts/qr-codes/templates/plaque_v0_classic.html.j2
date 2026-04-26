@@ -10,18 +10,19 @@
 {%- elif ch == ' ' %}<span class="ch-space">&nbsp;</span>
 {%- else %}<span class="ch-symbol">{{ ch | e }}</span>
 {%- endif -%}
+{%- if loop.index % 10 == 0 %}<wbr>{%- endif -%}
 {%- endfor -%}
 {%- endmacro -%}
 
 {%- macro fit_size(text) -%}
 {%- set n = (text | string | length) -%}
-{%- if n <= 14 -%}6cqw
-{%- elif n <= 22 -%}4.8cqw
-{%- elif n <= 32 -%}3.8cqw
-{%- elif n <= 42 -%}3.2cqw
-{%- elif n <= 52 -%}2.8cqw
-{%- elif n <= 63 -%}2.4cqw
-{%- else -%}2cqw
+{%- if n <= 14 -%}80px
+{%- elif n <= 22 -%}65px
+{%- elif n <= 32 -%}51px
+{%- elif n <= 42 -%}43px
+{%- elif n <= 52 -%}38px
+{%- elif n <= 63 -%}32px
+{%- else -%}27px
 {%- endif -%}
 {%- endmacro -%}
 
@@ -71,7 +72,7 @@
     background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 8'><path d='M0 4 Q 7.5 1 15 4 T 30 4 T 45 4 T 60 4' fill='none' stroke='%231a1714' stroke-width='1.2'/></svg>");
     background-repeat: repeat-x; background-size: 60px 8px; }
   .field { display: flex; flex-direction: column; gap: 6px; }
-  .value { font-family: "JetBrains Mono", monospace; font-size: 80px; line-height: 1.05; padding-bottom: 8px; border-bottom: 2px solid var(--ink); overflow-wrap: anywhere; }
+  .value { font-family: "JetBrains Mono", monospace; font-size: 80px; line-height: 1.05; padding-bottom: 8px; border-bottom: 2px solid var(--ink); overflow-wrap: anywhere; word-break: break-all; }
   .text-col { display: flex; flex-direction: column; gap: 5%; container-type: inline-size; padding-left: 6%; }
   .plaque { container-type: inline-size; }
   .wifi-icon { width: 74px; height: auto; flex: none; }

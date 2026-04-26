@@ -10,18 +10,19 @@
 {%- elif ch == ' ' %}<span class="ch-space">&nbsp;</span>
 {%- else %}<span class="ch-symbol">{{ ch | e }}</span>
 {%- endif -%}
+{%- if loop.index % 10 == 0 %}<wbr>{%- endif -%}
 {%- endfor -%}
 {%- endmacro -%}
 
 {%- macro fit_size(text) -%}
 {%- set n = (text | string | length) -%}
-{%- if n <= 14 -%}6cqw
-{%- elif n <= 22 -%}4.8cqw
-{%- elif n <= 32 -%}3.8cqw
-{%- elif n <= 42 -%}3.2cqw
-{%- elif n <= 52 -%}2.8cqw
-{%- elif n <= 63 -%}2.4cqw
-{%- else -%}2cqw
+{%- if n <= 14 -%}80px
+{%- elif n <= 22 -%}65px
+{%- elif n <= 32 -%}51px
+{%- elif n <= 42 -%}43px
+{%- elif n <= 52 -%}38px
+{%- elif n <= 63 -%}32px
+{%- else -%}27px
 {%- endif -%}
 {%- endmacro -%}
 
@@ -74,7 +75,7 @@
   .wifi-icon { width: 81px; height: auto; flex: none; }
   .fields { display: flex; flex-direction: column; gap: 24px; }
   .field { display: flex; flex-direction: column; gap: 6px; }
-  .mono-value { font-family: "JetBrains Mono", monospace; font-size: 80px; font-weight: 600; overflow-wrap: anywhere; line-height: 1.05; }
+  .mono-value { font-family: "JetBrains Mono", monospace; font-size: 80px; font-weight: 600; overflow-wrap: anywhere; word-break: break-all; line-height: 1.05; }
   @media print {
     @page { size: 14in 10in; margin: 0; }
     html, body { background: #fff; }

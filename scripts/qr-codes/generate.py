@@ -4,6 +4,7 @@
 import argparse
 import getpass
 import io
+import logging
 import re
 import sys
 from pathlib import Path
@@ -110,6 +111,12 @@ def main():
         help="Skip the unsafe-character warning prompt (length limit still applies)",
     )
     parser.add_argument(
+        "-v",
+        "--verbose",
+        action="store_true",
+        help="Print WeasyPrint rendering warnings and errors to stderr",
+    )
+    parser.add_argument(
         "--no-text-color",
         action="store_true",
         help="Render all characters in the default ink color (disables per-type coloring)",
@@ -140,6 +147,16 @@ def main():
 
     args = prompt_if_missing(args)
     validate_ssid(args.ssid, ignore_char_check=args.ignore_ssid_character_check)
+
+    wp_logger = logging.getLogger("weasyprint")
+    if args.verbose:
+        handler = logging.StreamHandler(sys.stderr)
+        handler.setFormatter(logging.Formatter("%(levelname)s: %(message)s"))
+        wp_logger.addHandler(handler)
+        wp_logger.setLevel(logging.DEBUG)
+    else:
+        wp_logger.addHandler(logging.NullHandler())
+        wp_logger.propagate = False
 
     output_path = (
         Path(args.output) if args.output else Path.cwd() / f"wifi-{args.ssid}.pdf"
