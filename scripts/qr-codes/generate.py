@@ -11,12 +11,23 @@ from pathlib import Path
 
 import argcomplete
 import segno
+from pypdf import PdfWriter, PdfReader
 from jinja2 import Environment, FileSystemLoader
 from weasyprint import HTML
 
 TEMPLATES_DIR = Path(__file__).parent / "templates"
 AUTH_CHOICES = ["WPA", "WEP", "nopass"]
 _SAFE_SSID_RE = re.compile(r"^[A-Za-z0-9_.\-]+$")
+
+
+def scale_pdf(path: Path, width_in: float, height_in: float) -> None:
+    reader = PdfReader(str(path))
+    writer = PdfWriter()
+    for page in reader.pages:
+        page.scale_to(width_in * 72, height_in * 72)
+        writer.add_page(page)
+    with open(str(path), "wb") as f:
+        writer.write(f)
 
 
 def validate_ssid(ssid: str, ignore_char_check: bool = False) -> None:
@@ -130,6 +141,18 @@ def main():
         help="Override the greeting text shown on the plaque",
     )
     parser.add_argument(
+        "--scale-w",
+        type=float,
+        metavar="INCHES",
+        help="Output page width in inches",
+    )
+    parser.add_argument(
+        "--scale-h",
+        type=float,
+        metavar="INCHES",
+        help="Output page height in inches",
+    )
+    parser.add_argument(
         "--color-alpha",
         metavar="HEX",
         help="Color for letter characters (default: inherit)",
@@ -192,6 +215,9 @@ def main():
 
     print(f"Rendering [{args.template}] {template_name} → {output_path}")
     HTML(string=html_content, base_url=str(TEMPLATES_DIR)).write_pdf(str(output_path))
+
+    if args.scale_w and args.scale_h:
+        scale_pdf(output_path, args.scale_w, args.scale_h)
     print(f"Saved: {output_path.resolve()}")
 
 
