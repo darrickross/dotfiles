@@ -109,6 +109,7 @@ def main():
         action="store_true",
         help="Render all characters in the default ink color (disables per-type coloring)",
     )
+    parser.add_argument("-g", "--greeting", metavar="TEXT", help="Override the greeting text shown on the plaque")
     parser.add_argument("--color-alpha", metavar="HEX", help="Color for letter characters (default: inherit)")
     parser.add_argument("--color-number", metavar="HEX", help="Color for digit characters (default: #1f5fd9)")
     parser.add_argument("--color-special", metavar="HEX", help="Color for symbol characters (default: #c0392b)")
@@ -140,6 +141,7 @@ def main():
         ssid=args.ssid,
         password=args.password or "",
         qr_svg=qr_svg,
+        greeting=args.greeting,
         color_alpha=color_alpha,
         color_number=color_number,
         color_special=color_special,
