@@ -4,6 +4,7 @@
 import argparse
 import getpass
 import io
+import re
 import sys
 from pathlib import Path
 
@@ -14,6 +15,19 @@ from weasyprint import HTML
 
 TEMPLATES_DIR = Path(__file__).parent / "templates"
 AUTH_CHOICES = ["WPA", "WEP", "nopass"]
+_SAFE_SSID_RE = re.compile(r"^[A-Za-z0-9_.\-]+$")
+
+
+def validate_ssid(ssid: str, ignore_char_check: bool = False) -> None:
+    byte_len = len(ssid.encode("utf-8"))
+    if byte_len > 32:
+        sys.exit(f"Error: SSID is {byte_len} bytes (max 32).")
+    if not _SAFE_SSID_RE.match(ssid) and not ignore_char_check:
+        unsafe = sorted({ch for ch in ssid if not _SAFE_SSID_RE.match(ch)})
+        chars = ", ".join(repr(c) for c in unsafe)
+        print(f"Warning: SSID contains characters that may cause issues on older devices: {chars}", file=sys.stderr)
+        if input("Continue anyway? [y/N] ").strip().lower() != "y":
+            sys.exit("Aborted.")
 
 
 def discover_templates():
@@ -85,10 +99,16 @@ def main():
         "--output",
         help="Output path — file or directory (default: wifi-<ssid>.pdf in cwd)",
     )
+    parser.add_argument(
+        "--ignore-ssid-character-check",
+        action="store_true",
+        help="Skip the unsafe-character warning prompt (length limit still applies)",
+    )
     argcomplete.autocomplete(parser)
     args = parser.parse_args()
 
     args = prompt_if_missing(args)
+    validate_ssid(args.ssid, ignore_char_check=args.ignore_ssid_character_check)
 
     output_path = (
         Path(args.output) if args.output else Path.cwd() / f"wifi-{args.ssid}.pdf"
