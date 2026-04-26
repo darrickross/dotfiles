@@ -27,6 +27,7 @@
     "gpgv",
     "histappend",
     "ignoreboth",
+    "isalpha",
     "isdigit",
     "jnoortheen",
     "kddejong",
