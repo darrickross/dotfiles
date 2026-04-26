@@ -104,6 +104,14 @@ def main():
         action="store_true",
         help="Skip the unsafe-character warning prompt (length limit still applies)",
     )
+    parser.add_argument(
+        "--no-text-color",
+        action="store_true",
+        help="Render all characters in the default ink color (disables per-type coloring)",
+    )
+    parser.add_argument("--color-alpha", metavar="HEX", help="Color for letter characters (default: inherit)")
+    parser.add_argument("--color-number", metavar="HEX", help="Color for digit characters (default: #1f5fd9)")
+    parser.add_argument("--color-special", metavar="HEX", help="Color for symbol characters (default: #c0392b)")
     argcomplete.autocomplete(parser)
     args = parser.parse_args()
 
@@ -118,11 +126,23 @@ def main():
 
     qr_svg = build_qr_svg(args.ssid, args.password or "", args.auth)
 
+    if args.no_text_color:
+        color_alpha = color_number = color_special = "inherit"
+    else:
+        color_alpha = args.color_alpha or "inherit"
+        color_number = args.color_number or "#1f5fd9"
+        color_special = args.color_special or "#c0392b"
+
     template_name = numbered[args.template]
     env = Environment(loader=FileSystemLoader(str(TEMPLATES_DIR)), autoescape=False)
     tpl = env.get_template(template_name + ".html.j2")
     html_content = tpl.render(
-        ssid=args.ssid, password=args.password or "", qr_svg=qr_svg
+        ssid=args.ssid,
+        password=args.password or "",
+        qr_svg=qr_svg,
+        color_alpha=color_alpha,
+        color_number=color_number,
+        color_special=color_special,
     )
 
     print(f"Rendering [{args.template}] {template_name} → {output_path}")
