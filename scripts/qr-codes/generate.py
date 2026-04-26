@@ -137,15 +137,17 @@ def main():
     template_name = numbered[args.template]
     env = Environment(loader=FileSystemLoader(str(TEMPLATES_DIR)), autoescape=False)
     tpl = env.get_template(template_name + ".html.j2")
-    html_content = tpl.render(
+    render_vars = dict(
         ssid=args.ssid,
         password=args.password or "",
         qr_svg=qr_svg,
-        greeting=args.greeting,
         color_alpha=color_alpha,
         color_number=color_number,
         color_special=color_special,
     )
+    if args.greeting is not None:
+        render_vars["greeting"] = args.greeting
+    html_content = tpl.render(**render_vars)
 
     print(f"Rendering [{args.template}] {template_name} → {output_path}")
     HTML(string=html_content, base_url=str(TEMPLATES_DIR)).write_pdf(str(output_path))
