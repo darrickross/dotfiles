@@ -59,6 +59,8 @@ def prompt_if_missing(args):
         args.password = getpass.getpass("Password: ")
         if not args.password:
             sys.exit("Error: Password cannot be empty for WPA/WEP networks.")
+    if args.password is not None and len(args.password) > 63:
+        sys.exit(f"Error: Password is {len(args.password)} characters (max 63).")
     return args
 
 
