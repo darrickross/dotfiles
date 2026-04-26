@@ -38,7 +38,7 @@
     border: 3px solid var(--ink);
     overflow: hidden;
     display: grid;
-    grid-template-columns: 35% 1fr;
+    grid-template-columns: 45% 1fr;
     container-type: inline-size;
   }
   .qr-side {
@@ -46,7 +46,7 @@
     background: var(--paperWarm);
     display: flex; flex-direction: column;
     align-items: center; justify-content: center;
-    gap: 4%; padding: 6%;
+    gap: 4%; padding: 5%;
   }
   .qr {
     aspect-ratio: 1 / 1; width: 100%;
@@ -54,13 +54,14 @@
   }
   .qr svg, .qr img { width: 100%; height: 100%; display: block; }
   .scan-hint { font-family: "Architects Daughter", cursive; font-size: 24px; color: #3a342d; }
-  .text-side { padding: 6% 7%; display: flex; flex-direction: column; justify-content: center; gap: 6%; }
+  .text-side { padding: 5% 5%; display: flex; flex-direction: column; justify-content: center; gap: 6%; }
   .head-row { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid var(--ink); padding-bottom: 14px; gap: 16px; }
   .label-tiny { font-family: "JetBrains Mono", ui-monospace, monospace; text-transform: uppercase; font-size: 32px; letter-spacing: .18em; color: var(--muted); }
-  .greeting { font-family: "Architects Daughter", cursive; font-size: 67px; line-height: 1; margin-top: 4px; }
+  .greeting { font-family: "Architects Daughter", cursive; font-size: 57px; line-height: 1; margin-top: 4px; }
   .wifi-icon { width: 81px; height: auto; flex: none; }
-  .grid { display: grid; grid-template-columns: 242px 1fr; gap: 22px 27px; align-items: baseline; }
-  .mono-value { font-family: "JetBrains Mono", monospace; font-size: 67px; font-weight: 600; word-break: break-all; }
+  .fields { display: flex; flex-direction: column; gap: 24px; }
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .mono-value { font-family: "JetBrains Mono", monospace; font-size: 60px; font-weight: 600; word-break: break-all; line-height: 1.05; }
   @media print {
     @page { size: 14in 10in; margin: 0; }
     html, body { background: #fff; }
@@ -99,11 +100,15 @@
           <circle cx="25" cy="34" r="2.4" fill="{{ accent | default('#e58a3b') }}"/>
         </svg>
       </div>
-      <div class="grid">
-        <div class="label-tiny">Network</div>
-        <div class="mono-value">{{ colorize(ssid) }}</div>
-        <div class="label-tiny">Password</div>
-        <div class="mono-value">{{ colorize(password) }}</div>
+      <div class="fields">
+        <div class="field">
+          <div class="label-tiny">Network</div>
+          <div class="mono-value">{{ colorize(ssid) }}</div>
+        </div>
+        <div class="field">
+          <div class="label-tiny">Password</div>
+          <div class="mono-value">{{ colorize(password) }}</div>
+        </div>
       </div>
     </div>
   </div>
