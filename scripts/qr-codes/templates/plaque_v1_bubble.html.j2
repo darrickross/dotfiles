@@ -19,7 +19,7 @@
 <title>WiFi · {{ ssid }}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Gloria+Hallelujah&family=Patrick+Hand&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;600&family=Gloria+Hallelujah&family=Patrick+Hand&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
   :root {
     --ink: #1a1714;
@@ -79,6 +79,11 @@
   .ch-symbol { color: {{ color_special }}; }
   .ch-space  { display: inline-block; }
 
+
+  .greeting-bar { display: flex; align-items: center; gap: 12px; }
+  .greeting-bar .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); flex: none; }
+  .greeting-bar .greeting-text { font-family: "Caveat", cursive; font-size: 43px; line-height: 1.1; color: #3a342d; }
+
 </style>
 </head>
 <body>
@@ -91,7 +96,6 @@
       {%- endif %}
     </div>
     <div class="text-col">
-      <div class="bubble"><div class="bubble-text">{{ greeting | default('pssst… wifi?') }}</div></div>
       <div class="field-stack">
         <div>
           <div class="label-tiny">Network</div>
@@ -101,6 +105,10 @@
           <div class="label-tiny">Password</div>
           <div class="value">{{ colorize(password) }}</div>
         </div>
+      </div>
+      <div class="greeting-bar">
+        <span class="dot"></span>
+        <span class="greeting-text">{{ greeting | default('pssst… wifi?') }}</span>
       </div>
     </div>
   </div>

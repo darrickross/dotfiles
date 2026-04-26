@@ -56,9 +56,7 @@
   .row:first-child { border-top: 1.5px solid var(--ink); }
   .row-label { flex: none; }
   .row-value { font-family: "JetBrains Mono", monospace; font-size: 80px; line-height: 1; flex: 1; word-break: break-all; }
-  .footer { display: flex; align-items: center; gap: 12px; padding-top: 4%; }
-  .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); flex: none; }
-  .footer-text { font-family: "Caveat", cursive; font-size: 43px; color: #3a342d; }
+
   @media print {
     @page { size: 14in 10in; margin: 0; }
     html, body { background: #fff; }
@@ -70,6 +68,11 @@
   .ch-digit  { color: {{ color_number }}; }
   .ch-symbol { color: {{ color_special }}; }
   .ch-space  { display: inline-block; }
+
+
+  .greeting-bar { display: flex; align-items: center; gap: 12px; }
+  .greeting-bar .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); flex: none; }
+  .greeting-bar .greeting-text { font-family: "Caveat", cursive; font-size: 43px; line-height: 1.1; color: #3a342d; }
 
 </style>
 </head>
@@ -101,9 +104,9 @@
         <div class="row-label label-tiny">password</div>
         <div class="row-value">{{ colorize(password) }}</div>
       </div>
-      <div class="footer">
-        <div class="dot"></div>
-        <div class="footer-text">{{ greeting | default('make yourself at home —') }}</div>
+      <div class="greeting-bar" style="padding-top: 4%;">
+        <span class="dot"></span>
+        <span class="greeting-text">{{ greeting | default('make yourself at home —') }}</span>
       </div>
     </div>
   </div>
