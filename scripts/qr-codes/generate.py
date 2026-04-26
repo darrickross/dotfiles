@@ -25,7 +25,10 @@ def validate_ssid(ssid: str, ignore_char_check: bool = False) -> None:
     if not _SAFE_SSID_RE.match(ssid) and not ignore_char_check:
         unsafe = sorted({ch for ch in ssid if not _SAFE_SSID_RE.match(ch)})
         chars = ", ".join(repr(c) for c in unsafe)
-        print(f"Warning: SSID contains characters that may cause issues on older devices: {chars}", file=sys.stderr)
+        print(
+            f"Warning: SSID contains characters that may cause issues on older devices: {chars}",
+            file=sys.stderr,
+        )
         if input("Continue anyway? [y/N] ").strip().lower() != "y":
             sys.exit("Aborted.")
 
@@ -64,7 +67,9 @@ def main():
         sys.exit("Error: No templates found in templates/")
 
     numbered = {str(i): name for i, name in enumerate(templates)}
-    epilog = "Templates:\n" + "\n".join(f"  {i}  {name}" for i, name in numbered.items())
+    epilog = "Templates:\n" + "\n".join(
+        f"  {i}  {name}" for i, name in numbered.items()
+    )
 
     parser = argparse.ArgumentParser(
         description="Generate a WiFi QR plaque PDF.",
@@ -109,10 +114,27 @@ def main():
         action="store_true",
         help="Render all characters in the default ink color (disables per-type coloring)",
     )
-    parser.add_argument("-g", "--greeting", metavar="TEXT", help="Override the greeting text shown on the plaque")
-    parser.add_argument("--color-alpha", metavar="HEX", help="Color for letter characters (default: inherit)")
-    parser.add_argument("--color-number", metavar="HEX", help="Color for digit characters (default: #1f5fd9)")
-    parser.add_argument("--color-special", metavar="HEX", help="Color for symbol characters (default: #c0392b)")
+    parser.add_argument(
+        "-g",
+        "--greeting",
+        metavar="TEXT",
+        help="Override the greeting text shown on the plaque",
+    )
+    parser.add_argument(
+        "--color-alpha",
+        metavar="HEX",
+        help="Color for letter characters (default: inherit)",
+    )
+    parser.add_argument(
+        "--color-number",
+        metavar="HEX",
+        help="Color for digit characters (default: #1f5fd9)",
+    )
+    parser.add_argument(
+        "--color-special",
+        metavar="HEX",
+        help="Color for symbol characters (default: #c0392b)",
+    )
     argcomplete.autocomplete(parser)
     args = parser.parse_args()
 
