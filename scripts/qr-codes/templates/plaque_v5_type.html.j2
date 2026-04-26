@@ -1,0 +1,112 @@
+{#-
+  Plaque V5 · Typographic / minimal
+  Required: ssid, password, and one of qr_svg / qr_data_url
+  Optional: accent (default #e58a3b), greeting (default "make yourself at home —")
+-#}
+{%- macro colorize(text) -%}
+{%- for ch in text -%}
+{%- if ch.isalpha() %}<span class="ch-letter">{{ ch }}</span>
+{%- elif ch.isdigit() %}<span class="ch-digit">{{ ch }}</span>
+{%- elif ch == ' ' %}<span class="ch-space">&nbsp;</span>
+{%- else %}<span class="ch-symbol">{{ ch | e }}</span>
+{%- endif -%}
+{%- endfor -%}
+{%- endmacro -%}
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>WiFi · {{ ssid }}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;600&family=Patrick+Hand&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a1714;
+    --paper: #fdfcf8;
+    --muted: #6b635a;
+    --accent: {{ accent | default('#e58a3b') }};
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: #f0eee9; font-family: "Patrick Hand", system-ui, sans-serif; color: var(--ink); }
+  .stage { min-height: 100vh; display: grid; place-items: center; padding: 24px; }
+  .plaque {
+    aspect-ratio: 14 / 10;
+    width: min(96vw, calc(96vh * 14 / 10));
+    background: var(--paper);
+    overflow: hidden;
+    display: grid; grid-template-columns: auto 1fr;
+    gap: 7%; padding: 6% 8%; align-items: center;
+    container-type: inline-size;
+  }
+  .qr-col { display: flex; flex-direction: column; align-items: center; gap: 3%; width: 430px; }
+  .qr {
+    aspect-ratio: 1 / 1; width: 100%;
+    border: 2px solid var(--ink); background: #fff; padding: 8px;
+  }
+  .qr svg, .qr img { width: 100%; height: 100%; display: block; }
+  .scan-row { display: flex; align-items: center; gap: 8px; }
+  .label-tiny { font-family: "JetBrains Mono", ui-monospace, monospace; text-transform: uppercase; font-size: 35px; letter-spacing: .22em; color: var(--muted); }
+  .wifi-icon-sm { width: 32px; height: auto; }
+  .text-col { display: flex; flex-direction: column; }
+  .row {
+    display: flex; align-items: baseline; gap: 18px;
+    padding: 3% 0; border-bottom: 1.5px solid var(--ink);
+  }
+  .row:first-child { border-top: 1.5px solid var(--ink); }
+  .row-label { width: 161px; flex: none; }
+  .row-value { font-family: "JetBrains Mono", monospace; font-size: 87px; line-height: 1; flex: 1; word-break: break-all; }
+  .footer { display: flex; align-items: center; gap: 12px; padding-top: 4%; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); flex: none; }
+  .footer-text { font-family: "Caveat", cursive; font-size: 43px; color: #3a342d; }
+  @media print {
+    @page { size: 14in 10in; margin: 0; }
+    html, body { background: #fff; }
+    .stage { padding: 0; min-height: auto; }
+    .plaque { width: 14in; height: 10in; }
+  }
+
+  .ch-letter { color: var(--ink); }
+  .ch-digit  { color: #1f5fd9; }
+  .ch-symbol { color: #c0392b; }
+  .ch-space  { display: inline-block; }
+
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="plaque">
+    <div class="qr-col">
+      <div class="qr">
+        {%- if qr_svg %}{{ qr_svg | safe }}
+        {%- elif qr_data_url %}<img src="{{ qr_data_url }}" alt="WiFi QR code">
+        {%- endif %}
+      </div>
+      <div class="scan-row">
+        <svg class="wifi-icon-sm" viewBox="0 0 50 40" fill="none" aria-hidden="true">
+          <path d="M3 16 Q 25 -2 47 16" stroke="#1a1714" stroke-width="2.5" stroke-linecap="round"/>
+          <path d="M9 22 Q 25 8 41 22" stroke="#1a1714" stroke-width="2.5" stroke-linecap="round"/>
+          <path d="M15 28 Q 25 19 35 28" stroke="#1a1714" stroke-width="2.5" stroke-linecap="round"/>
+          <circle cx="25" cy="34" r="2.4" fill="#1a1714"/>
+        </svg>
+        <div class="label-tiny">scan + connect</div>
+      </div>
+    </div>
+    <div class="text-col">
+      <div class="row">
+        <div class="row-label label-tiny">network</div>
+        <div class="row-value">{{ colorize(ssid) }}</div>
+      </div>
+      <div class="row">
+        <div class="row-label label-tiny">password</div>
+        <div class="row-value">{{ colorize(password) }}</div>
+      </div>
+      <div class="footer">
+        <div class="dot"></div>
+        <div class="footer-text">{{ greeting | default('make yourself at home —') }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

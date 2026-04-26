@@ -1,0 +1,112 @@
+{#-
+  Plaque V2 · Speech bubble
+  Required: ssid, password, and one of qr_svg / qr_data_url
+  Optional: accent (default #e58a3b), greeting (default "pssst… wifi?")
+-#}
+{%- macro colorize(text) -%}
+{%- for ch in text -%}
+{%- if ch.isalpha() %}<span class="ch-letter">{{ ch }}</span>
+{%- elif ch.isdigit() %}<span class="ch-digit">{{ ch }}</span>
+{%- elif ch == ' ' %}<span class="ch-space">&nbsp;</span>
+{%- else %}<span class="ch-symbol">{{ ch | e }}</span>
+{%- endif -%}
+{%- endfor -%}
+{%- endmacro -%}
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>WiFi · {{ ssid }}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Gloria+Hallelujah&family=Patrick+Hand&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a1714;
+    --paper: #fdfcf8;
+    --muted: #6b635a;
+    --accent: {{ accent | default('#e58a3b') }};
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: #f0eee9; font-family: "Patrick Hand", system-ui, sans-serif; color: var(--ink); }
+  .stage { min-height: 100vh; display: grid; place-items: center; padding: 24px; }
+  .plaque {
+    aspect-ratio: 14 / 10;
+    width: min(96vw, calc(96vh * 14 / 10));
+    background: var(--paper);
+    position: relative; overflow: hidden;
+    display: grid; grid-template-columns: auto 1fr;
+    gap: 5%; align-items: center;
+    padding: 6% 7%;
+    container-type: inline-size;
+  }
+  /* Hand-drawn corner ticks */
+  .ticks::before, .ticks::after, .ticks > i::before, .ticks > i::after {
+    content: ""; position: absolute; width: 40px; height: 40px; border: 2px solid var(--ink);
+  }
+  .ticks::before { top: 2.5%; left: 2%; border-right: none; border-bottom: none; }
+  .ticks::after  { top: 2.5%; right: 2%; border-left: none; border-bottom: none; }
+  .ticks > i { position: absolute; inset: 0; pointer-events: none; }
+  .ticks > i::before { bottom: 2.5%; left: 2%; border-right: none; border-top: none; }
+  .ticks > i::after  { bottom: 2.5%; right: 2%; border-left: none; border-top: none; }
+  .qr {
+    aspect-ratio: 1 / 1; width: 510px;
+    border: 2px dashed var(--ink); background: #fff; padding: 8px;
+  }
+  .qr svg, .qr img { width: 100%; height: 100%; display: block; }
+  .label-tiny { font-family: "JetBrains Mono", ui-monospace, monospace; text-transform: uppercase; font-size: 32px; letter-spacing: .18em; color: var(--muted); margin-bottom: 6px; }
+  .text-col { display: flex; flex-direction: column; gap: 4%; }
+  .bubble {
+    position: relative; display: inline-block;
+    border: 2px solid var(--ink); border-radius: 32px 32px 32px 4px;
+    padding: 14px 22px; background: #fff;
+    margin-bottom: 18px; align-self: flex-start;
+  }
+  .bubble-text { font-family: "Gloria Hallelujah", cursive; font-size: 56px; line-height: 1.1; }
+  .bubble::after {
+    content: ""; position: absolute; left: -2px; bottom: -16px;
+    width: 22px; height: 18px;
+    background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 22 18'><path d='M0 0 L 22 0 L 4 16 Z' fill='%23ffffff' stroke='%231a1714' stroke-width='2' stroke-linejoin='round'/><path d='M2 0 L 22 0' stroke='%23ffffff' stroke-width='3'/></svg>") no-repeat;
+  }
+  .field-stack { display: flex; flex-direction: column; gap: 4%; }
+  .value { font-family: "JetBrains Mono", monospace; font-size: 114px; line-height: 1.05; padding-bottom: 8px; border-bottom: 2px dashed var(--ink); word-break: break-all; }
+  @media print {
+    @page { size: 14in 10in; margin: 0; }
+    html, body { background: #fff; }
+    .stage { padding: 0; min-height: auto; }
+    .plaque { width: 14in; height: 10in; }
+  }
+
+  .ch-letter { color: var(--ink); }
+  .ch-digit  { color: #1f5fd9; }
+  .ch-symbol { color: #c0392b; }
+  .ch-space  { display: inline-block; }
+
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="plaque ticks">
+    <i></i>
+    <div class="qr">
+      {%- if qr_svg %}{{ qr_svg | safe }}
+      {%- elif qr_data_url %}<img src="{{ qr_data_url }}" alt="WiFi QR code">
+      {%- endif %}
+    </div>
+    <div class="text-col">
+      <div class="bubble"><div class="bubble-text">{{ greeting | default('pssst… wifi?') }}</div></div>
+      <div class="field-stack">
+        <div>
+          <div class="label-tiny">Network</div>
+          <div class="value">{{ colorize(ssid) }}</div>
+        </div>
+        <div>
+          <div class="label-tiny">Password</div>
+          <div class="value">{{ colorize(password) }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
