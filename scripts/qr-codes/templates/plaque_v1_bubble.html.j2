@@ -220,10 +220,14 @@
   }
   .greeting-bar .greeting-text {
     font-family: "Caveat", cursive;
-    font-size: 43px;
     line-height: 1.1;
     color: #3a342d;
     overflow-wrap: anywhere;
+  }
+  .greeting-hl {
+    background: linear-gradient(transparent 68%, {{ accent | default('#e58a3b') ~ '59' }} 68%);
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
   }
 
 </style>
@@ -250,7 +254,7 @@
       </div>
       <div class="greeting-bar">
         <span class="dot"></span>
-        <span class="greeting-text">{{ greeting | default('pssst… wifi?') }}</span>
+        <span class="greeting-text" style="font-size: {{ fit_size(greeting | default('pssst… wifi?')) }}"><span class="greeting-hl">{{ greeting | default('pssst… wifi?') }}</span></span>
       </div>
     </div>
   </div>

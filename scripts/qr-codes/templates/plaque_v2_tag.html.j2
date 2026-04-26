@@ -119,10 +119,14 @@
   }
   .greeting {
     font-family: "Architects Daughter", cursive;
-    font-size: 57px;
-    line-height: 1;
+    line-height: 1.1;
     margin-top: 4px;
     overflow-wrap: anywhere;
+  }
+  .greeting-hl {
+    background: linear-gradient(transparent 68%, {{ accent | default('#e58a3b') ~ '59' }} 68%);
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
   }
   .wifi-icon {
     width: 81px;
@@ -200,7 +204,7 @@
           <circle cx="25" cy="34" r="2.4" fill="{{ accent | default('#e58a3b') }}"/>
         </svg>
         <div>
-          <div class="greeting">{{ greeting | default('Welcome in.') }}</div>
+          <div class="greeting" style="font-size: {{ fit_size(greeting | default('Welcome in.')) }}"><span class="greeting-hl">{{ greeting | default('Welcome in.') }}</span></div>
         </div>
       </div>
       <div class="fields">

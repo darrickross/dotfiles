@@ -101,10 +101,14 @@
   }
   .greeting {
     font-family: "Caveat", cursive;
-    font-size: 80px;
-    line-height: 1;
+    line-height: 1.1;
     color: var(--ink);
     overflow-wrap: anywhere;
+  }
+  .greeting-hl {
+    background: linear-gradient(transparent 68%, {{ accent | default('#e58a3b') ~ '59' }} 68%);
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
   }
   .squiggle {
     width: 100%;
@@ -194,7 +198,7 @@
           <path d="M15 28 Q 25 19 35 28" stroke="{{ accent | default('#e58a3b') }}" stroke-width="2.5" stroke-linecap="round"/>
           <circle cx="25" cy="34" r="2.4" fill="{{ accent | default('#e58a3b') }}"/>
         </svg>
-        <div class="greeting">{{ greeting | default('Hi! Connect.') }}</div>
+        <div class="greeting" style="font-size: {{ fit_size(greeting | default('Hi! Connect.')) }}"><span class="greeting-hl">{{ greeting | default('Hi! Connect.') }}</span></div>
       </div>
       <div class="squiggle"></div>
       <div class="field">
