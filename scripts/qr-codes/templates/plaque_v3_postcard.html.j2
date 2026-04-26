@@ -109,19 +109,13 @@
   .hero {
     font-family: "Kalam", cursive;
     font-weight: 700;
-    font-size: 96px;
-    line-height: .95;
+    line-height: 1.1;
     overflow-wrap: anywhere;
   }
-  .hero-highlight {
-    position: absolute;
-    left: 0;
-    right: 12%;
-    bottom: 4%;
-    height: 16%;
-    background: var(--accent);
-    opacity: .35;
-    z-index: -1;
+  .hero-hl {
+    background: linear-gradient(transparent 68%, {{ accent | default('#e58a3b') ~ '59' }} 68%);
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
   }
   .squiggle {
     width: 60%;
@@ -203,8 +197,7 @@
     </div>
     <div class="text-col">
       <div class="hero-wrap">
-        <div class="hero">{{ greeting | default('the wifi.') }}</div>
-        <div class="hero-highlight"></div>
+        <div class="hero" style="font-size: {{ fit_size(greeting | default('the wifi.')) }}"><span class="hero-hl">{{ greeting | default('the wifi.') }}</span></div>
       </div>
       <div class="squiggle"></div>
       <div class="field-stack">
