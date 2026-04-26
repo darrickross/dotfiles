@@ -1,0 +1,116 @@
+{#-
+  Plaque V3 · Luggage tag
+  Required: ssid, password, and one of qr_svg / qr_data_url
+  Optional: accent (default #e58a3b), greeting (default "Welcome in.")
+-#}
+{%- macro colorize(text) -%}
+{%- for ch in text -%}
+{%- if ch.isalpha() %}<span class="ch-letter">{{ ch }}</span>
+{%- elif ch.isdigit() %}<span class="ch-digit">{{ ch }}</span>
+{%- elif ch == ' ' %}<span class="ch-space">&nbsp;</span>
+{%- else %}<span class="ch-symbol">{{ ch | e }}</span>
+{%- endif -%}
+{%- endfor -%}
+{%- endmacro -%}
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>WiFi · {{ ssid }}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Architects+Daughter&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a1714;
+    --paper: #fdfcf8;
+    --paperWarm: #fbf8ef;
+    --muted: #6b635a;
+    --accent: {{ accent | default('#e58a3b') }};
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: #f0eee9; font-family: "Architects Daughter", system-ui, sans-serif; color: var(--ink); }
+  .stage { min-height: 100vh; display: grid; place-items: center; padding: 24px; }
+  .plaque {
+    aspect-ratio: 14 / 10;
+    width: min(96vw, calc(96vh * 14 / 10));
+    background: var(--paper);
+    border: 3px solid var(--ink);
+    overflow: hidden;
+    display: grid;
+    grid-template-columns: 45% 1fr;
+    container-type: inline-size;
+  }
+  .qr-side {
+    border-right: 2px dashed var(--ink);
+    background: var(--paperWarm);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 4%; padding: 5% 0 5% 5%;
+  }
+  .qr {
+    aspect-ratio: 1 / 1; width: 100%;
+    border: 2px solid var(--ink); background: #fff; padding: 8px;
+  }
+  .qr svg, .qr img { width: 100%; height: 100%; display: block; }
+  .scan-hint { font-family: "Architects Daughter", cursive; font-size: 24px; color: #3a342d; }
+  .text-side { padding: 5% 5%; display: flex; flex-direction: column; justify-content: center; gap: 6%; }
+  .head-row { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid var(--ink); padding-bottom: 14px; gap: 16px; }
+  .label-tiny { font-family: "JetBrains Mono", ui-monospace, monospace; text-transform: uppercase; font-size: 32px; letter-spacing: .18em; color: var(--muted); }
+  .greeting { font-family: "Architects Daughter", cursive; font-size: 57px; line-height: 1; margin-top: 4px; }
+  .wifi-icon { width: 81px; height: auto; flex: none; }
+  .fields { display: flex; flex-direction: column; gap: 24px; }
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .mono-value { font-family: "JetBrains Mono", monospace; font-size: 80px; font-weight: 600; word-break: break-all; line-height: 1.05; }
+  @media print {
+    @page { size: 14in 10in; margin: 0; }
+    html, body { background: #fff; }
+    .stage { padding: 0; min-height: auto; }
+    .plaque { width: 14in; height: 10in; }
+  }
+
+  .ch-letter { color: {{ color_alpha }}; }
+  .ch-digit  { color: {{ color_number }}; }
+  .ch-symbol { color: {{ color_special }}; }
+  .ch-space  { display: inline-block; }
+
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="plaque">
+    <div class="qr-side">
+      <div class="qr">
+        {%- if qr_svg %}{{ qr_svg | safe }}
+        {%- elif qr_data_url %}<img src="{{ qr_data_url }}" alt="WiFi QR code">
+        {%- endif %}
+      </div>
+      <div class="scan-hint">↑ scan me ↑</div>
+    </div>
+    <div class="text-side">
+      <div class="head-row">
+        <svg class="wifi-icon" viewBox="0 0 50 40" fill="none" aria-hidden="true">
+          <path d="M3 16 Q 25 -2 47 16" stroke="{{ accent | default('#e58a3b') }}" stroke-width="2.5" stroke-linecap="round"/>
+          <path d="M9 22 Q 25 8 41 22" stroke="{{ accent | default('#e58a3b') }}" stroke-width="2.5" stroke-linecap="round"/>
+          <path d="M15 28 Q 25 19 35 28" stroke="{{ accent | default('#e58a3b') }}" stroke-width="2.5" stroke-linecap="round"/>
+          <circle cx="25" cy="34" r="2.4" fill="{{ accent | default('#e58a3b') }}"/>
+        </svg>
+        <div>
+          <div class="greeting">{{ greeting | default('Welcome in.') }}</div>
+        </div>
+      </div>
+      <div class="fields">
+        <div class="field">
+          <div class="label-tiny">Network</div>
+          <div class="mono-value">{{ colorize(ssid) }}</div>
+        </div>
+        <div class="field">
+          <div class="label-tiny">Password</div>
+          <div class="mono-value">{{ colorize(password) }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

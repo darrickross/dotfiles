@@ -9,6 +9,9 @@
     "dotfile",
     "dotfiles",
     "DRYRUN",
+    "elif",
+    "endfor",
+    "endmacro",
     "erasedups",
     "executiontime",
     "Fantasque",
@@ -24,6 +27,8 @@
     "gpgv",
     "histappend",
     "ignoreboth",
+    "isalpha",
+    "isdigit",
     "jnoortheen",
     "kddejong",
     "Kleopatra",
@@ -37,6 +42,7 @@
     "nixfmt",
     "nixos",
     "nixpkgs",
+    "nopass",
     "ohmyposh",
     "openpgp",
     "opentofu",
@@ -53,10 +59,13 @@
     "shfmt",
     "SHLVL",
     "signingkey",
+    "svgns",
     "timonwong",
     "vdir",
     "venv",
+    "WeasyPrint",
     "wslpath",
+    "xmldecl",
     "yubikey"
   ],
   // Add TOML settings
@@ -101,5 +110,6 @@
     "editor.defaultFormatter": "tamasfe.even-better-toml"
   },
   // Enable format on save
-  "editor.formatOnSave": true
+  "editor.formatOnSave": true,
+  "python-envs.defaultEnvManager": "ms-python.python:system"
 }
