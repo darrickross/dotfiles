@@ -42,6 +42,7 @@
       py.argcomplete # dotfiles/scripts/qr-codes/generate.py
       py.jinja2 # dotfiles/scripts/qr-codes/generate.py
       py.pillow # dotfiles/scripts/pdf/convert_tif_jpg_to_pdf.py
+      py.pypdf # dotfiles/scripts/<multiple>
       py.pypdf2 # dotfiles/scripts/pdf/<multiple>
       py.rich # dotfiles/scripts/video/mkv-info, mkv-scan.py, rename-media.py
       py.segno # dotfiles/scripts/qr-codes/generate.py
