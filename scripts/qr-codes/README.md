@@ -14,20 +14,22 @@ The password is prompted securely (hidden input) when omitted.
 
 ### Parameters
 
-| Flag                             | Short | Default               | Description                                                    |
-| -------------------------------- | ----- | --------------------- | -------------------------------------------------------------- |
-| `--ssid`                         | `-s`  | prompted              | Network name. Max 32 bytes UTF-8.                              |
-| `--password`                     | `-p`  | prompted              | WiFi password. Max 63 characters.                              |
-| `--auth`                         | `-a`  | `WPA`                 | Encryption standard: `WPA`, `WEP`, or `nopass`                 |
-| `--template`                     | `-t`  | `0`                   | Template number (see list below)                               |
-| `--output`                       | `-o`  | `./wifi-<ssid>.pdf`   | Output file or directory                                       |
-| `--greeting`                     | `-g`  | *(template default)*  | Override the greeting text on the plaque                       |
-| `--verbose`                      | `-v`  | off                   | Print WeasyPrint rendering warnings and errors to stderr       |
-| `--no-text-color`                |       | off                   | Render all credential characters in the default ink color      |
-| `--color-alpha`                  |       | `inherit`             | Color for **letter** characters (hex, e.g. `#2d6a4f`)          |
-| `--color-number`                 |       | `#1f5fd9`             | Color for **digit** characters                                 |
-| `--color-special`                |       | `#c0392b`             | Color for **symbol** characters                                |
-| `--ignore-ssid-character-check`  |       | off                   | Skip the unsafe-character warning (length limit still applies) |
+| Flag                             | Short | Default               | Description                                                      |
+| -------------------------------- | ----- | --------------------- | ---------------------------------------------------------------- |
+| `--ssid`                         | `-s`  | prompted              | Network name. Max 32 bytes UTF-8.                                |
+| `--password`                     | `-p`  | prompted              | WiFi password. Max 63 characters.                                |
+| `--auth`                         | `-a`  | `WPA`                 | Encryption standard: `WPA`, `WEP`, or `nopass`                   |
+| `--template`                     | `-t`  | `0`                   | Template number (see list below)                                 |
+| `--output`                       | `-o`  | `./wifi-<ssid>.pdf`   | Output file or directory                                         |
+| `--greeting`                     | `-g`  | *(template default)*  | Override the greeting text on the plaque                         |
+| `--verbose`                      | `-v`  | off                   | Print WeasyPrint rendering warnings and errors to stderr         |
+| `--no-text-color`                |       | off                   | Render all credential characters in the default ink color        |
+| `--color-alpha`                  |       | `inherit`             | Color for **letter** characters (hex, e.g. `#2d6a4f`)            |
+| `--color-number`                 |       | `#1f5fd9`             | Color for **digit** characters                                   |
+| `--color-special`                |       | `#c0392b`             | Color for **symbol** characters                                  |
+| `--ignore-ssid-character-check`  |       | off                   | Skip the unsafe-character warning (length limit still applies)   |
+| `--scale-w`                      |       | *(none)*              | Scale output PDF to this width in inches (requires `--scale-h`)  |
+| `--scale-h`                      |       | *(none)*              | Scale output PDF to this height in inches (requires `--scale-w`) |
 
 ### Validation
 
