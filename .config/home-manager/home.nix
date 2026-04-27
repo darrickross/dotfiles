@@ -41,9 +41,13 @@
       py.ansible-core # vscode plugin: redhat.ansible
       py.black # vscode plugin: ms-python.black-formatter
       py.cfn-lint # vscode plugin: kddejong.vscode-cfn-lint
+      py.argcomplete # dotfiles/scripts/qr-codes/generate.py
+      py.jinja2 # dotfiles/scripts/qr-codes/generate.py
       py.pillow # dotfiles/scripts/pdf/convert_tif_jpg_to_pdf.py
       py.pypdf # dotfiles/scripts/pdf/<multiple>
       py.rich # dotfiles/scripts/video/mkv-info, mkv-scan.py, rename-media.py
+      py.segno # dotfiles/scripts/qr-codes/generate.py
+      py.weasyprint # dotfiles/scripts/qr-codes/generate.py
     ]))
     shellcheck # vscode plugin: timonwong.shellcheck
     shfmt # vscode plugin: foxundermoon.shell-format
@@ -212,6 +216,17 @@
 
   programs.bash.bashrcExtra = ''
     source ${../../.bashrc}
+    _wifi_qr_complete() {
+      local IFS=$'\013'
+      local SUPPRESS_SPACE=0
+      compopt +o nospace 2>/dev/null && SUPPRESS_SPACE=1
+      COMPREPLY=( $(IFS="$IFS" COMP_LINE="$COMP_LINE" COMP_POINT="$COMP_POINT" \
+        _ARGCOMPLETE=1 _ARGCOMPLETE_SUPPRESS_SPACE=$SUPPRESS_SPACE \
+        python3 "$HOME/projects/dotfiles/scripts/qr-codes/generate.py" \
+        8>&1 9>&2 1>/dev/null 2>/dev/null) )
+      [[ $? == 0 && $SUPPRESS_SPACE == 1 ]] && compopt -o nospace
+    }
+    complete -o nospace -o default -F _wifi_qr_complete wifi-qr
 
     if [[ -z "''${_HM_CHECKED:-}" ]]; then
       export _HM_CHECKED=1
@@ -236,6 +251,7 @@
     rename-media = "python3 ~/projects/dotfiles/scripts/video/rename-media.py";
     mkv-info = "python3 ~/projects/dotfiles/scripts/video/mkv-info.py";
     mkv-scan = "python3 ~/projects/dotfiles/scripts/video/mkv-scan.py";
+    wifi-qr = "python3 ~/projects/dotfiles/scripts/qr-codes/generate.py";
   };
 
   # Home Manager can also manage your environment variables through

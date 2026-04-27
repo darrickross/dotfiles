@@ -1,0 +1,216 @@
+{#-
+  Plaque V1 · Classic split
+  Required: ssid, password, and one of qr_svg / qr_data_url
+  Optional: accent (default #e58a3b), greeting (default "Hi! Connect.")
+-#}
+{%- macro colorize(text) -%}
+{%- for ch in text -%}
+{%- if ch.isalpha() %}<span class="ch-letter">{{ ch }}</span>
+{%- elif ch.isdigit() %}<span class="ch-digit">{{ ch }}</span>
+{%- elif ch == ' ' %}<span class="ch-space">&nbsp;</span>
+{%- else %}<span class="ch-symbol">{{ ch | e }}</span>
+{%- endif -%}
+{%- if loop.index % 10 == 0 %}<wbr>{%- endif -%}
+{%- endfor -%}
+{%- endmacro -%}
+
+{%- macro fit_size(text) -%}
+{%- set n = (text | string | length) -%}
+{%- if n <= 14 -%}80px
+{%- elif n <= 22 -%}65px
+{%- elif n <= 32 -%}51px
+{%- elif n <= 42 -%}43px
+{%- elif n <= 52 -%}38px
+{%- elif n <= 63 -%}32px
+{%- else -%}27px
+{%- endif -%}
+{%- endmacro -%}
+
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>WiFi · {{ ssid }}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=Patrick+Hand&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a1714;
+    --paper: #fdfcf8;
+    --muted: #6b635a;
+    --accent: {{ accent | default('#e58a3b') }};
+  }
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: #f0eee9;
+    font-family: "Patrick Hand", system-ui, sans-serif;
+    color: var(--ink);
+  }
+  .stage {
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+  }
+  .plaque {
+    aspect-ratio: 14 / 10;
+    width: min(96vw, calc(96vh * 14 / 10));
+    background: var(--paper);
+    position: relative;
+    overflow: hidden;
+    display: grid;
+    grid-template-columns: 45% 55%;
+    gap: 0;
+    align-items: center;
+    padding: 6% 7%;
+  }
+  .qr-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2%;
+  }
+  .qr {
+    aspect-ratio: 1 / 1;
+    width: 100%;
+    border: 2px solid var(--ink);
+    background: #fff;
+    padding: 8px;
+  }
+  .qr svg, .qr img {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+  .label-tiny {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    text-transform: uppercase;
+    font-size: 29px;
+    letter-spacing: .18em;
+    color: var(--muted);
+  }
+  .greeting-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .greeting {
+    font-family: "Caveat", cursive;
+    line-height: 1.1;
+    color: var(--ink);
+    overflow-wrap: anywhere;
+  }
+  .greeting-hl {
+    background: linear-gradient(transparent 68%, {{ accent | default('#e58a3b') ~ '59' }} 68%);
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+  }
+  .squiggle {
+    width: 100%;
+    height: 10px;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 8'><path d='M0 4 Q 7.5 1 15 4 T 30 4 T 45 4 T 60 4' fill='none' stroke='%231a1714' stroke-width='1.2'/></svg>");
+    background-repeat: repeat-x;
+    background-size: 60px 8px;
+  }
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .value {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 80px;
+    line-height: 1.05;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--ink);
+    overflow-wrap: anywhere;
+    word-break: break-all;
+  }
+  .text-col {
+    display: flex;
+    flex-direction: column;
+    gap: 5%;
+    container-type: inline-size;
+    padding-left: 6%;
+  }
+  .plaque {
+    container-type: inline-size;
+  }
+  .wifi-icon {
+    width: 74px;
+    height: auto;
+    flex: none;
+  }
+  @media print {
+    @page {
+      size: 14in 10in;
+      margin: 0;
+    }
+      html, body {
+      background: #fff;
+    }
+      .stage {
+      padding: 0;
+      min-height: auto;
+    }
+      .plaque {
+      width: 14in;
+      height: 10in;
+    }
+  }
+
+  .ch-letter {
+    color: {{ color_alpha }};
+  }
+  .ch-digit  {
+    color: {{ color_number }};
+  }
+  .ch-symbol {
+    color: {{ color_special }};
+  }
+  .ch-space  {
+    display: inline-block;
+  }
+
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="plaque">
+    <div class="qr-col">
+      <div class="qr">
+        {%- if qr_svg %}{{ qr_svg | safe }}
+        {%- elif qr_data_url %}<img src="{{ qr_data_url }}" alt="WiFi QR code">
+        {%- endif %}
+      </div>
+      <div class="label-tiny">Scan to connect</div>
+    </div>
+    <div class="text-col">
+      <div class="greeting-row">
+        <svg class="wifi-icon" viewBox="0 0 50 40" fill="none" aria-hidden="true">
+          <path d="M3 16 Q 25 -2 47 16" stroke="{{ accent | default('#e58a3b') }}" stroke-width="2.5" stroke-linecap="round"/>
+          <path d="M9 22 Q 25 8 41 22" stroke="{{ accent | default('#e58a3b') }}" stroke-width="2.5" stroke-linecap="round"/>
+          <path d="M15 28 Q 25 19 35 28" stroke="{{ accent | default('#e58a3b') }}" stroke-width="2.5" stroke-linecap="round"/>
+          <circle cx="25" cy="34" r="2.4" fill="{{ accent | default('#e58a3b') }}"/>
+        </svg>
+        <div class="greeting" style="font-size: {{ fit_size(greeting | default('Hi! Connect.')) }}"><span class="greeting-hl">{{ greeting | default('Hi! Connect.') }}</span></div>
+      </div>
+      <div class="squiggle"></div>
+      <div class="field">
+        <div class="label-tiny">Network</div>
+        <div class="value" style="font-size: {{ fit_size(ssid) }}">{{ colorize(ssid) }}</div>
+      </div>
+      <div class="field">
+        <div class="label-tiny">Password</div>
+        <div class="value" style="font-size: {{ fit_size(password) }}">{{ colorize(password) }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
