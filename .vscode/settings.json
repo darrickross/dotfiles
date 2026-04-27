@@ -1,6 +1,7 @@
 {
   "cSpell.words": [
     "apikey",
+    "argcomplete",
     "autojunk",
     "Automagic",
     "Automagically",
@@ -9,6 +10,8 @@
     "clearsign",
     "CLIENTID",
     "CLIENTSECRET",
+    "compopt",
+    "COMPREPLY",
     "dircolors",
     "dotfile",
     "dotfiles",
