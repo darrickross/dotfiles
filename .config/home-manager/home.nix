@@ -121,37 +121,40 @@
       '';
     };
 
-    # Unlock Bitwarden vault and emit a BW_SESSION token.
-    # Usage: export BW_SESSION=$(bw-unlock)
-    ".local/bin/bw-unlock" = {
+    # Prefixed with _ so it is not called directly. The alias below sources it,
+    # which is the only way exports reach the calling shell.
+    # Must be sourced (. bws-load-local-machine-credential) so the export
+    # reaches the calling shell. Running it directly has no effect on the
+    # parent environment.
+    ".local/bin/_bws-load-local-machine-credential" = {
       executable = true; # mode is read-only by the nix store; no chmod needed
       force = true;
       text = ''
         #!/usr/bin/env bash
         set -euo pipefail
 
-        echo "Usage: export BW_SESSION=\$(bw-unlock)" >&2
-
-        # Check if already authenticated; if not, start an interactive login session
-        LOGIN_STATUS=$(bw status 2>/dev/null | jq -r '.status // "unauthenticated"')
-
-        if [[ "$LOGIN_STATUS" == "unauthenticated" ]]; then
-          echo "Not logged in — starting interactive login..." >&2
-          bw login >&2
-        fi
-
-        # Unlock vault and capture session token (prompts for master password on stderr)
-        SESSION=$(bw unlock --raw)
-
-        # Verify the session is actually valid before returning it
-        STATUS=$(bw status --session "$SESSION" | jq -r '.status')
-        if [[ "$STATUS" != "unlocked" ]]; then
-          echo "Error: vault status is '$STATUS' after unlock — session may be invalid" >&2
+        # Refuse to run as a subprocess — exports would be lost on exit.
+        if [[ "''${BASH_SOURCE[0]}" == "''${0}" ]]; then
+          echo "Error: this script must be sourced, not executed." >&2
+          echo "  Run:  source bws-load-local-machine-credential" >&2
           exit 1
         fi
-        echo "Vault unlocked successfully." >&2
 
-        echo "$SESSION"
+        SECRETS_FILE="$HOME/.local/secrets/bitwarden.yaml"
+
+        if [[ ! -f "$SECRETS_FILE" ]]; then
+          echo "Error: secrets file not found at $SECRETS_FILE" >&2
+          echo "  Run bw_sync_encrypted_secrets.sh to create it." >&2
+          return 1
+        fi
+
+        BWS_ACCESS_TOKEN=$(
+          sops --decrypt --extract '["local_computer_machine_account_bws_access_token"]' \
+            "$SECRETS_FILE"
+        )
+        export BWS_ACCESS_TOKEN
+
+        echo "BWS_ACCESS_TOKEN set for this shell session only."
       '';
     };
 
@@ -252,6 +255,7 @@
     mkv-info = "python3 ~/projects/dotfiles/scripts/video/mkv-info.py";
     mkv-scan = "python3 ~/projects/dotfiles/scripts/video/mkv-scan.py";
     wifi-qr = "python3 ~/projects/dotfiles/scripts/qr-codes/generate.py";
+    bws-load-local-machine-credential = "source $HOME/.local/bin/_bws-load-local-machine-credential";
   };
 
   # Home Manager can also manage your environment variables through
