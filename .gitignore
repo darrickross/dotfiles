@@ -11,6 +11,8 @@ id_ed25519
 id_ecdsa
 *.secret
 *.secrets
+# Bitwarden secrets — encrypted file lives here, never committed
+.local/secrets/
 
 # SSH private keys (public keys and config are fine to track)
 .ssh/id_*

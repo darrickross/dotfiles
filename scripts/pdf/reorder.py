@@ -1,6 +1,6 @@
 import argparse
 
-import PyPDF2
+from pypdf import PdfReader, PdfWriter
 
 
 def main():
@@ -23,8 +23,8 @@ def main():
     output_path = args.output or args.input
 
     with open(args.input, "rb") as file:
-        reader = PyPDF2.PdfReader(file)
-        writer = PyPDF2.PdfWriter()
+        reader = PdfReader(file)
+        writer = PdfWriter()
 
         for i in args.page_order:
             if i < len(reader.pages):

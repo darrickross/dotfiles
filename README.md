@@ -316,6 +316,202 @@ $ find $HOME -type l
 /home/my_user/.config/gh/config.yml
 ```
 
+## YubiKey Setup
+
+### Linux
+
+#### SSH Resident Key `ed25519-sk`
+
+```bash
+ssh-keygen -t ed25519-sk -O resident -O verify-required
+```
+
+---
+
+### Windows
+
+#### SSH Resident Key
+
+1. **Install Windows OpenSSH**
+   Download from [Win32-OpenSSH Releases](https://github.com/PowerShell/Win32-OpenSSH/releases).
+   This provides access to `ssh-sk-helper.exe`.
+
+2. **Re-generate the resident key**
+   Run the following command (in PowerShell, not WSL):
+
+   ```bash
+   ssh-keygen -K
+   ```
+
+3. **Rename the key**
+   Replace `HASH_HERE` with the appropriate identifier:
+
+   ```bash
+   mv id-HASH_HERE yubikey_sk
+   ```
+
+---
+
+#### GPG Key
+
+1. **Install GPG for Windows**
+   Download and install [Gpg4win](https://gnupg.org/download/).
+
+---
+
+##### Optional: Set Up Kleopatra to Start on Login
+
+You have two options:
+
+###### Option A: Import Existing XML Task File
+
+Use the provided [`Start Kleopatra in Background at Login.xml`](./docs/Start%20Kleopatra%20in%20Background%20at%20Login.xml).
+
+> [!NOTE]
+> This method may not always work reliably. You can manually recreate this using [Option B](#option-b-create-a-scheduled-task-manually).
+
+###### Option B: Create a Scheduled Task Manually
+
+1. Open **Task Scheduler**
+2. Go to **Action > Create Task**
+3. Under the **General** tab:
+   - Name the task (e.g., "Kleopatra Background Start")
+4. Under the **Triggers** tab:
+   - New Trigger: **At log on**
+5. Under the **Actions** tab:
+   - New Action: **Start a program**
+   - **Program**: `cmd.exe`
+   - **Arguments**:
+
+     ```none
+     /c START "" /B "C:\Program Files (x86)\Gpg4win\bin\kleopatra.exe" --daemon
+     ```
+
+6. Under the **Conditions** tab:
+   - Uncheck all options
+7. Under the **Settings** tab:
+   - Uncheck all except **"Allow task to be run on demand"**
+
+---
+
+#### Import the GPG Public Key
+
+To import your GPG public key:
+
+```bash
+gpg --import <Path/to/file.asc>
+```
+
+---
+
+#### Test GPG Functionality
+
+You can verify it's working with:
+
+```bash
+echo "test" | gpg --clearsign
+```
+
+---
+
+### WSL2
+
+WSL2 has no direct USB access, so the YubiKey cannot be used by Linux binaries directly. The solution is to install the relevant tools on the **Windows host** — WSL2's default PATH includes the Windows PATH, so Linux processes can discover and invoke Windows `.exe` files transparently.
+
+#### `age-plugin-yubikey`
+
+Allows `age`/`sops` inside WSL2 to perform YubiKey-backed encryption/decryption. The Linux `age` binary spawns `age-plugin-yubikey.exe` as a subprocess over stdin/stdout — the `.exe` runs on Windows where it has full USB access to the YubiKey. No USB forwarding (e.g. usbipd-win) is required.
+
+##### Installation (PowerShell as Administrator)
+
+1. Download the latest `age-plugin-yubikey.exe` from the [releases page](https://github.com/str4d/age-plugin-yubikey/releases).
+
+2. Create the install directory:
+
+   ```powershell
+   mkdir "C:\Program Files\age-plugin-yubikey"
+   ```
+
+3. Copy the binary into it:
+
+   ```powershell
+   cp age-plugin-yubikey.exe "C:\Program Files\age-plugin-yubikey\age-plugin-yubikey.exe"
+   ```
+
+4. **Optional** — Add to the Windows system PATH so `age-plugin-yubikey.exe` is callable from anywhere on Windows (not required for WSL2, which uses the wrapper script):
+
+   ```powershell
+   [Environment]::SetEnvironmentVariable(
+     "Path",
+     $Env:Path + ";C:\Program Files\age-plugin-yubikey",
+     [EnvironmentVariableTarget]::Machine
+   )
+   ```
+
+5. **WSL2** — Apply the home-manager configuration to install the wrapper script:
+
+   ```bash
+   hms
+   ```
+
+> [!NOTE]
+> WSL2 uses the wrapper script at `~/.local/bin/age-plugin-yubikey` (managed by home-manager) which hardcodes the path to the `.exe`. The optional system PATH step is only needed if you also want to call `age-plugin-yubikey.exe` directly from Windows.
+
+Verify the wrapper is working from WSL2:
+
+```bash
+age-plugin-yubikey --help
+```
+
+##### Initial Key Generation (WSL2, first time only)
+
+> [!WARNING]
+> Only run this once per YubiKey. Generating a key in a slot that already has one will overwrite it permanently with no recovery.
+
+1. Generate the age key on the YubiKey:
+
+   ```bash
+   age-plugin-yubikey --generate --slot 1 --pin-policy always --touch-policy always --name "darrickross/dotfiles age"
+   ```
+
+##### Load `age` Public Key into `sop.yml`
+
+> [!TIP]
+> These steps are safe to run at any time.
+
+0. Make sure the Yubikey is available on the host Windows system.
+
+1. Load the recipient (public key) into `.sops.yaml`:
+
+   ```bash
+   yq -i ".creation_rules[0].age = \"$(age-plugin-yubikey --list | grep -oE 'age1yubikey1[A-Za-z0-9]+')\"" ~/projects/dotfiles/.sops.yaml
+   ```
+
+> [!NOTE]
+> You will need to replace `~/project/dotfiles/` with the path to the root of this dotfiles repository on your system.
+
+---
+
+## Bitwarden Setup
+
+### `homelab-cli-secrets` Secure Note
+
+The `bw-bootstrap-secrets` script fetches a Bitwarden Secure Note named **`homelab-cli-secrets`** from your *homelab* Bitwarden account. The Notes field must contain valid YAML in the following format:
+
+```yaml
+bw_client_id: "user.xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+bw_client_secret: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+bw_password: "your-bitwarden-master-password"
+```
+
+The `bw_client_id` and `bw_client_secret` come from the Bitwarden web vault under:
+**Account Settings → Security → API Key**
+
+> [!CAUTION]
+> These credentials are for the **homelab** Bitwarden account (the secondary account used for non-interactive API access), not your primary personal account.
+
+---
+
 ## Create your own `dotfiles` repository
 
 TODO
