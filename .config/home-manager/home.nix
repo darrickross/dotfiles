@@ -131,7 +131,6 @@
       force = true;
       text = ''
         #!/usr/bin/env bash
-        set -euo pipefail
 
         # Refuse to run as a subprocess — exports would be lost on exit.
         if [[ "''${BASH_SOURCE[0]}" == "''${0}" ]]; then
@@ -151,7 +150,8 @@
         BWS_ACCESS_TOKEN=$(
           sops --decrypt --extract '["local_computer_machine_account_bws_access_token"]' \
             "$SECRETS_FILE"
-        )
+        ) || { echo "Error: failed to decrypt $SECRETS_FILE" >&2; return 1; }
+        [[ -n "$BWS_ACCESS_TOKEN" ]] || { echo "Error: decrypted token is empty" >&2; return 1; }
         export BWS_ACCESS_TOKEN
 
         echo "BWS_ACCESS_TOKEN set for this shell session only."
