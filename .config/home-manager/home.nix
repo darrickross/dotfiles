@@ -26,7 +26,7 @@
 
     ansible-lint
     bat
-    bitwarden-cli # used by bw-unlock / bw_sync_encrypted_secrets.sh
+    bitwarden-cli # used by bw_sync_encrypted_secrets.sh
     bws # authenticated via BWS_ACCESS_TOKEN from the secrets file
     eza
     ffmpeg # ffprobe used by rename-media.py
@@ -190,9 +190,15 @@
 
         mkdir -p "$HOME/.local/secrets"
 
-        # Interactive login with primary Bitwarden account
-        echo "Log in to your primary Bitwarden account:"
-        BW_SESSION=$(bw unlock --raw)
+        # Log in or unlock — bw unlock only works on an already-authenticated vault,
+        # so check status first and fall through to login on a fresh machine.
+        echo "Connecting to your Bitwarden account:"
+        BW_STATUS=$(bw status 2>/dev/null | jq -r '.status' 2>/dev/null || echo "unauthenticated")
+        if [[ "$BW_STATUS" == "unauthenticated" ]]; then
+          BW_SESSION=$(bw login --raw)
+        else
+          BW_SESSION=$(bw unlock --raw)
+        fi
         export BW_SESSION
 
         # Write notes to a tmpfile inside the secrets dir so the path matches
@@ -276,7 +282,7 @@
   #
   home.sessionVariables = {
     # This should contain the age-plugin-yubikey key info
-    # Output of `age-plugin-yubikey -i` and the slot the key is in
+    # Output of `age-plugin-yubikey --identity --slot 1` (see README YubiKey setup)
     SOPS_AGE_KEY_FILE = "${config.home.homeDirectory}/.config/age/yubikey-identity.txt";
   };
 

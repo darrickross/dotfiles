@@ -474,12 +474,19 @@ age-plugin-yubikey --help
    age-plugin-yubikey --generate --slot 1 --pin-policy always --touch-policy always --name "darrickross/dotfiles age"
    ```
 
-##### Load `age` Public Key into `sop.yml`
+2. Export the identity stanza so `sops` can use the YubiKey for decryption:
 
-> [!TIP]
-> These steps are safe to run at any time.
+   ```bash
+   mkdir -p ~/.config/age
+   age-plugin-yubikey --identity --slot 1 > ~/.config/age/yubikey-identity.txt
+   ```
 
-0. Make sure the Yubikey is available on the host Windows system.
+   This file is what `SOPS_AGE_KEY_FILE` points to.
+
+##### Load `age` Public Key into `.sops.yaml`
+
+> [!NOTE]
+> These steps are safe to run at any time. Make sure the YubiKey is available on the host Windows system before running them.
 
 1. Load the recipient (public key) into `.sops.yaml`:
 
@@ -488,27 +495,24 @@ age-plugin-yubikey --help
    ```
 
 > [!NOTE]
-> You will need to replace `~/project/dotfiles/` with the path to the root of this dotfiles repository on your system.
+> You will need to replace `~/projects/dotfiles/` with the path to the root of this dotfiles repository on your system.
 
 ---
 
 ## Bitwarden Setup
 
-### `homelab-cli-secrets` Secure Note
+### `local-machine-bws-secrets` Secure Note
 
-The `bw-bootstrap-secrets` script fetches a Bitwarden Secure Note named **`homelab-cli-secrets`** from your *homelab* Bitwarden account. The Notes field must contain valid YAML in the following format:
+The `bw_sync_encrypted_secrets.sh` script fetches a Bitwarden Secure Note named **`local-machine-bws-secrets`** from your primary Bitwarden account. The Notes field must contain valid YAML in the following format:
 
 ```yaml
-bw_client_id: "user.xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-bw_client_secret: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-bw_password: "your-bitwarden-master-password"
+local_computer_machine_account_bws_access_token: "your-bws-access-token"
 ```
 
-The `bw_client_id` and `bw_client_secret` come from the Bitwarden web vault under:
-**Account Settings → Security → API Key**
+The BWS access token comes from the Bitwarden Secrets Manager web app under the machine account for this computer.
 
-> [!CAUTION]
-> These credentials are for the **homelab** Bitwarden account (the secondary account used for non-interactive API access), not your primary personal account.
+> [!NOTE]
+> Run `bw_sync_encrypted_secrets.sh` on first setup, or any time the BWS access token is rotated. It encrypts the token locally with your YubiKey so it never sits on disk in plaintext.
 
 ---
 
