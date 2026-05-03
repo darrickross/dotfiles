@@ -1,12 +1,12 @@
 # AGENTS.md — Agent guidance for this dotfiles repo
 
-## Repo layout and symlink management
+## Repo layout and dotfile management
 
-Files in this repo are symlinked into `~` with GNU Stow — running `stow .` from the repo root creates the symlinks. The directory structure mirrors `~` exactly (`.config/`, `.ssh/`, etc.).
+The directory structure of this repo mirrors `~` exactly (`.config/`, `.ssh/`, etc.). Dotfiles are activated via Home Manager, not symlinked manually.
 
-- `.stow-local-ignore` lists what is **not** stowed (docs/, .vscode/, README.md, AGENTS.md, etc.)
-- Never run `stow --adopt` without immediately reviewing `git diff` — it moves existing files from `~` into the repo, which can accidentally pull in secrets or untracked configs
-- Adding a new dotfile means creating it under the repo at the correct relative path and re-running `stow .`
+- Shell config (`.bashrc`) is sourced at build time via `programs.bash.bashrcExtra` in `home.nix` — Home Manager generates `~/.bashrc` and sources the repo file
+- Scripts and managed files are declared as `home.file` entries in `home.nix`
+- Adding a new managed file means declaring it in `home.nix` under `home.file` and running `hms`
 
 ---
 
