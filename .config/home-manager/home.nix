@@ -158,6 +158,28 @@
       '';
     };
 
+    # Lists all secrets available in the BWS project, showing only the key
+    # (note) and ID of each entry. Requires BWS_ACCESS_TOKEN to be set in
+    # the environment — run bws-load-local-machine-credential first.
+    ".local/bin/bws-check-available-secrets" = {
+      executable = true;
+      force = true;
+      text = ''
+        #!/usr/bin/env bash
+        set -euo pipefail
+
+        if [[ -z "''${BWS_ACCESS_TOKEN:-}" ]]; then
+          echo "Error: BWS_ACCESS_TOKEN is not set." >&2
+          echo "  Run:  bws-load-local-machine-credential" >&2
+          exit 1
+        fi
+
+        echo "             Secret UUID             | Key"
+
+        bws secret list --output json | jq -r '.[] | "\(.id) | \(.key)"'
+      '';
+    };
+
     # Sync down the secret list from Bitwarden and re-encrypt it locally.
     # Use this on first setup, or when the BWS access token or other secrets have
     # been rotated and you need to refresh ~/.local/secrets/bitwarden.yaml.
