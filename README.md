@@ -516,6 +516,86 @@ The BWS access token comes from the Bitwarden Secrets Manager web app under the 
 
 ---
 
+### Daily Workflow
+
+#### 1. Load the BWS token into your shell
+
+Before using any `bws` commands, load the token from the encrypted local file:
+
+```bash
+bws-load-local-machine-credential
+```
+
+This decrypts `~/.local/secrets/bitwarden.yaml` with your YubiKey and exports `BWS_ACCESS_TOKEN` into the current shell session. The token is not persisted anywhere else.
+
+#### 2. List available secrets
+
+To see what secrets the machine account has access to:
+
+```bash
+bws-check-available-secrets
+```
+
+Output shows the UUID and key name of every secret:
+
+```text
+             Secret UUID             | Key
+xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx | MY_API_KEY
+xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx | DATABASE_PASSWORD
+```
+
+The **Key** column is what you use as the environment variable name in your commands.
+
+#### 3. Inject secrets into a command with `bws run`
+
+`bws run` fetches all secrets the machine account can access, sets each one as an environment variable named after its **Key**, and then runs the command:
+
+```bash
+bws run -- <COMMAND>
+```
+
+Example — print a secret value:
+
+```bash
+bws run -- printenv MY_API_KEY
+```
+
+Example — pass a secret to a script without it ever touching your shell history:
+
+```bash
+bws run -- ./deploy.sh
+```
+
+The command has access to every secret as a plain environment variable. The values are never written to disk and are not visible in your shell's history.
+
+> [!IMPORTANT]
+> `bws run` is always a subprocess — it cannot modify your current shell session. Use `bws-load-local-machine-credential` when you need `BWS_ACCESS_TOKEN` itself in the current shell.
+
+---
+
+### Naming Secrets in Bitwarden Secrets Manager
+
+The **Key** field of a secret in Bitwarden Secrets Manager becomes the environment variable name when you use `bws run`. Follow these rules to avoid unexpected behavior:
+
+- **Use uppercase with underscores** — `MY_API_KEY`, not `my-api-key`. Lowercase names work but are unconventional for environment variables.
+- **Start with a letter or underscore** — names that start with a digit are invalid in most shells (`1PASSWORD` will fail).
+- **No hyphens** — hyphens are not valid in shell variable names. Use underscores instead (`API_SECRET_KEY`, not `API-SECRET-KEY`).
+- **No spaces** — spaces break variable name parsing entirely.
+- **Avoid reserved names** — do not use names that shells or programs define themselves (`PATH`, `HOME`, `USER`, `SHELL`, `IFS`, etc.).
+
+A safe naming pattern is `SCREAMING_SNAKE_CASE` that describes the system and purpose:
+
+examples:
+
+```text
+SERVICE_NAME_SECRET_TYPE
+GITHUB_TOKEN
+POSTGRES_PASSWORD
+STRIPE_API_KEY
+```
+
+---
+
 ## Create your own `dotfiles` repository
 
 TODO
