@@ -3,7 +3,7 @@
 import os
 import re
 import argparse
-from PyPDF2 import PdfMerger
+from pypdf import PdfMerger
 
 
 def parse_args():
