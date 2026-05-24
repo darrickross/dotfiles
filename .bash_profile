@@ -1,15 +1,9 @@
 # shellcheck disable=SC2148
+# ~/.bash_profile — bootstrap stub.
+#
+# Home Manager generates the real ~/.bash_profile (sources ~/.bashrc for
+# login shells).  This file is only present before the first `home-manager switch`.
 
-# Moved from ~/.profile
-# Remove this section completely:
-# if [ -n "$BASH_VERSION" ]; then
-#     if [ -f "$HOME/.bashrc" ]; then
-#         . "$HOME/.bashrc"
-#     fi
-# fi
-
-# ~/.bash_profile
-# Add this:
 if [ -f "$HOME/.bashrc" ]; then
     # shellcheck disable=SC1091
     . "$HOME/.bashrc"

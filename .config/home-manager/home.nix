@@ -1,22 +1,25 @@
 { config, pkgs, ... }:
 
 {
-  # Home Manager needs a bit of information about you and the paths it should
-  # manage.
+  imports = [
+    ./modules/bash
+    ./modules/wsl.nix
+  ];
+
+  # ---------------------------------------------------------------------------
+  # Identity
+  # ---------------------------------------------------------------------------
   home.username = "itsjustmech";
   home.homeDirectory = "/home/itsjustmech";
 
   # This value determines the Home Manager release that your configuration is
-  # compatible with. This helps avoid breakage when a new Home Manager release
-  # introduces backwards incompatible changes.
-  #
-  # You should not change this value, even if you update Home Manager. If you do
-  # want to update the value, then make sure to first check the Home Manager
-  # release notes.
-  home.stateVersion = "25.05"; # Please read the comment before changing.
+  # compatible with. Do not change it even when updating Home Manager — check
+  # the release notes first.
+  home.stateVersion = "25.05";
 
-  # The home.packages option allows you to install Nix packages into your
-  # environment.
+  # ---------------------------------------------------------------------------
+  # Packages
+  # ---------------------------------------------------------------------------
   home.packages = with pkgs; [
     # # It is sometimes useful to fine-tune packages, for example, by applying
     # # overrides. You can do that directly here, just don't forget the
@@ -30,7 +33,7 @@
     bws # authenticated via BWS_ACCESS_TOKEN from the secrets file
     eza
     ffmpeg # ffprobe used by rename-media.py
-    # fnm # Fast Node Manager - VSCode Plugin development?
+    # fnm # Fast Node Manager - (VS Code plugin workflow)
     jq
     gh # github cli
     mkvtoolnix
@@ -96,6 +99,10 @@
       # "terraform"
     ];
 
+  # ---------------------------------------------------------------------------
+  # sops-nix
+  # ---------------------------------------------------------------------------
+
   # sops-nix: use YubiKey retired key slot as the age identity for decryption.
   # age-plugin-yubikey uses the 20 retired key management slots (1-20), not the
   # standard PIV slots (9a-9e). Generate with: age-plugin-yubikey --generate --slot 1
@@ -103,17 +110,17 @@
   # by bw-bootstrap-secrets and never touched during home-manager activation.
   sops.age.keyFile = "${config.home.homeDirectory}/.config/age/yubikey-identity.txt";
 
-  # Home Manager is pretty good at managing dotfiles. The primary way to manage
-  # plain files is through 'home.file'.
-  # home.file = { ".bashrc".source = ../../.bashrc; };
+  # ---------------------------------------------------------------------------
+  # Managed scripts / executables in ~/.local/bin
+  # ---------------------------------------------------------------------------
 
   home.file = {
     # age-plugin-yubikey wrapper: forwards to the Windows host binary so that
-    # age/sops in WSL2 can discover it via PATH and use the YubiKey over USB.
-    # age plugin discovery works by spawning an executable named
-    # "age-plugin-<name>", so a shell alias won't work — it must be on PATH.
+    # age/sops in WSL2 can discover it via PATH.  A shell alias won't work
+    # because age plugin discovery requires a real executable named
+    # "age-plugin-<name>" on PATH.
     ".local/bin/age-plugin-yubikey" = {
-      executable = true; # mode is read-only by the nix store; no chmod needed
+      executable = true;
       force = true;
       text = ''
         #!/usr/bin/env bash
@@ -121,13 +128,10 @@
       '';
     };
 
-    # Prefixed with _ so it is not called directly. The alias below sources it,
-    # which is the only way exports reach the calling shell.
-    # Must be sourced (. bws-load-local-machine-credential) so the export
-    # reaches the calling shell. Running it directly has no effect on the
-    # parent environment.
+    # Must be *sourced* (not executed) so that `export BWS_ACCESS_TOKEN`
+    # reaches the calling shell.  The underscore prefix signals this.
     ".local/bin/_bws-load-local-machine-credential" = {
-      executable = true; # mode is read-only by the nix store; no chmod needed
+      executable = true;
       force = true;
       text = ''
         #!/usr/bin/env bash
@@ -158,9 +162,7 @@
       '';
     };
 
-    # Lists all secrets available in the BWS project, showing only the key
-    # (note) and ID of each entry. Requires BWS_ACCESS_TOKEN to be set in
-    # the environment — run bws-load-local-machine-credential first.
+    # Lists all secrets available in the BWS project (requires BWS_ACCESS_TOKEN).
     ".local/bin/bws-check-available-secrets" = {
       executable = true;
       force = true;
@@ -180,15 +182,8 @@
       '';
     };
 
-    # Sync down the secret list from Bitwarden and re-encrypt it locally.
-    # Use this on first setup, or when the BWS access token or other secrets have
-    # been rotated and you need to refresh ~/.local/secrets/bitwarden.yaml.
-    #
-    # Expects the Bitwarden item "local-machine-bws-secrets" to be a Secure Note
-    # whose Notes field contains valid YAML in the following format:
-    #
-    #   local_computer_machine_account_bws_access_token: "your-bws-access-token"
-    #
+    # Sync secrets from Bitwarden and re-encrypt locally with YubiKey.
+    # Run on first setup or after rotating tokens.
     ".local/bin/bw_sync_encrypted_secrets.sh" = {
       executable = true;
       force = true;
@@ -240,13 +235,50 @@
     };
   };
 
-  # Expose ~/.local/bin (scripts above) to the shell PATH.
-  home.sessionPath = [ "$HOME/.local/bin" ];
+  # ---------------------------------------------------------------------------
+  # PATH
+  # ---------------------------------------------------------------------------
+  home.sessionPath = [
+    "$HOME/.local/bin"
+    "$HOME/bin"
+  ];
 
-  programs.bash.enable = true;
+  # ---------------------------------------------------------------------------
+  # Session environment variables
+  # ---------------------------------------------------------------------------
+  home.sessionVariables = {
+    # Age identity file for sops decryption via YubiKey.
+    # Output of `age-plugin-yubikey --identity --slot 1` (see README YubiKey setup).
+    SOPS_AGE_KEY_FILE = "${config.home.homeDirectory}/.config/age/yubikey-identity.txt";
+  };
 
-  programs.bash.bashrcExtra = ''
-    source ${../../.bashrc}
+  # ---------------------------------------------------------------------------
+  # Shell aliases (home-manager / tooling specific)
+  # ---------------------------------------------------------------------------
+  programs.bash.shellAliases = {
+    # Better defaults (packages installed above)
+    cat = "bat";
+    ls = "eza --git";
+
+    # Home Manager workflow
+    hms = "home-manager switch && exec $SHELL -l";
+    hmu = "nix flake update --flake $(dirname $(readlink -f ~/.config/home-manager/flake.nix))";
+
+    # Project scripts
+    rename-media = "python3 ~/projects/dotfiles/scripts/video/rename-media.py";
+    mkv-info = "python3 ~/projects/dotfiles/scripts/video/mkv-info.py";
+    mkv-scan = "python3 ~/projects/dotfiles/scripts/video/mkv-scan.py";
+    wifi-qr = "python3 ~/projects/dotfiles/scripts/qr-codes/generate.py";
+
+    # Bitwarden Secrets Manager
+    bws-load-local-machine-credential = "source $HOME/.local/bin/_bws-load-local-machine-credential";
+  };
+
+  # ---------------------------------------------------------------------------
+  # Extra bash init — home-manager / repo-specific logic
+  # ---------------------------------------------------------------------------
+  programs.bash.initExtra = ''
+    # Tab-completion for the wifi-qr script (uses argcomplete).
     _wifi_qr_complete() {
       local IFS=$'\013'
       local SUPPRESS_SPACE=0
@@ -259,12 +291,15 @@
     }
     complete -o nospace -o default -F _wifi_qr_complete wifi-qr
 
+    # Warn when any .nix file in the home-manager config is newer than the
+    # last `home-manager switch`, so you don't forget to apply changes.
     if [[ -z "''${_HM_CHECKED:-}" ]]; then
       export _HM_CHECKED=1
       _hm_profile="$HOME/.local/state/nix/profiles/home-manager"
       if [[ -L "$_hm_profile" ]]; then
         _hm_switch_time=$(stat -c %Y "$_hm_profile")
-        _hm_newer=$(find -L "$HOME/.config/home-manager" -name "*.nix" -newermt "@$_hm_switch_time" 2>/dev/null | head -1)
+        _hm_newer=$(find -L "$HOME/.config/home-manager" -name "*.nix" \
+          -newermt "@$_hm_switch_time" 2>/dev/null | head -1)
         if [[ -n "$_hm_newer" ]]; then
           echo "home-manager: config changed since last switch — run 'hms' to apply" >&2
         fi
@@ -274,40 +309,8 @@
     fi
   '';
 
-  programs.bash.shellAliases = {
-    cat = "bat";
-    ls = "eza --git";
-    hms = "home-manager switch && exec \$SHELL -l";
-    hmu = "nix flake update --flake $(dirname $(readlink -f ~/.config/home-manager/flake.nix))";
-    rename-media = "python3 ~/projects/dotfiles/scripts/video/rename-media.py";
-    mkv-info = "python3 ~/projects/dotfiles/scripts/video/mkv-info.py";
-    mkv-scan = "python3 ~/projects/dotfiles/scripts/video/mkv-scan.py";
-    wifi-qr = "python3 ~/projects/dotfiles/scripts/qr-codes/generate.py";
-    bws-load-local-machine-credential = "source $HOME/.local/bin/_bws-load-local-machine-credential";
-  };
-
-  # Home Manager can also manage your environment variables through
-  # 'home.sessionVariables'. These will be explicitly sourced when using a
-  # shell provided by Home Manager. If you don't want to manage your shell
-  # through Home Manager then you have to manually source 'hm-session-vars.sh'
-  # located at either
-  #
-  #  ~/.nix-profile/etc/profile.d/hm-session-vars.sh
-  #
-  # or
-  #
-  #  ~/.local/state/nix/profiles/profile/etc/profile.d/hm-session-vars.sh
-  #
-  # or
-  #
-  #  /etc/profiles/per-user/itsjustmech/etc/profile.d/hm-session-vars.sh
-  #
-  home.sessionVariables = {
-    # This should contain the age-plugin-yubikey key info
-    # Output of `age-plugin-yubikey --identity --slot 1` (see README YubiKey setup)
-    SOPS_AGE_KEY_FILE = "${config.home.homeDirectory}/.config/age/yubikey-identity.txt";
-  };
-
-  # Let Home Manager install and manage itself.
+  # ---------------------------------------------------------------------------
+  # Let Home Manager manage itself
+  # ---------------------------------------------------------------------------
   programs.home-manager.enable = true;
 }
