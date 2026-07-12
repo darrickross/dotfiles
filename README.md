@@ -93,6 +93,12 @@ This symlink serves two purposes:
 
 ### 4 - Apply the Home Manager configuration
 
+Home Manager generates `~/.bashrc`, `~/.bash_profile`, `~/.profile`, and `~/.bash_logout` itself and will refuse to overwrite existing files, so remove the distro's stock copies first:
+
+```sh
+rm -f ~/.bashrc ~/.bash_profile ~/.profile ~/.bash_logout
+```
+
 Run the Home Manager switch using the flake in this repo. On a fresh system where `home-manager` is not yet on `PATH`, use `nix run`:
 
 ```sh

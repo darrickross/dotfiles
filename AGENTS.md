@@ -4,7 +4,8 @@
 
 The directory structure of this repo mirrors `~` exactly (`.config/`, `.ssh/`, etc.). Dotfiles are activated via Home Manager, not symlinked manually.
 
-- Shell config (`.bashrc`) is sourced at build time via `programs.bash.bashrcExtra` in `home.nix` — Home Manager generates `~/.bashrc` and sources the repo file
+- Shell config is native Home Manager: `programs.bash.*` options split across `.config/home-manager/modules/bash/*.nix` (history, prompt, aliases, shell options, logout) plus `.config/home-manager/modules/wsl.nix` — Home Manager generates `~/.bashrc` entirely from these
+- The repo's `.bashrc`, `.bash_profile`, `.profile`, and `.bash_logout` are **bootstrap stubs** only read before the first `home-manager switch`; do not add real configuration to them — put it in the modules
 - Scripts and managed files are declared as `home.file` entries in `home.nix`
 - Adding a new managed file means declaring it in `home.nix` under `home.file` and running `hms`
 - Never hardcode the clone path (e.g. `~/projects/dotfiles`) in aliases or scripts — flakes evaluate from a nix-store copy, so the clone location is unknowable at build time. Resolve it at runtime with `$(dotfiles-root)`, which works backwards from the `~/.config/home-manager` symlink (a documented setup step that `hms` and `hmu` also depend on)
@@ -146,6 +147,7 @@ Example of a correctly formatted table:
 | Path                                    | Purpose                                                                                                             |
 | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
 | `.config/home-manager/home.nix`         | All scripts, aliases, and packages are defined here as home-manager managed files                                   |
+| `.config/home-manager/modules/`         | Native bash config (`bash/*.nix`: history, prompt, aliases, options, logout) and WSL2 integration (`wsl.nix`)       |
 | `.config/sops/.sops.yaml`               | sops encryption rules — age recipient is the YubiKey public key, path regex targets `secrets/*.yaml`                |
 | `~/.config/sops/.sops.yaml`             | Deployed copy of the above, placed by home-manager — scripts pass this path to `sops --config`                      |
 | `~/.local/secrets/bitwarden.yaml`       | Encrypted BWS access token — gitignored, created by `bw_sync_encrypted_secrets.sh`                                  |
