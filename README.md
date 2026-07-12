@@ -285,7 +285,7 @@ age-plugin-yubikey --help
 1. Load the recipient (public key) into `.sops.yaml`:
 
    ```bash
-   yq -i ".creation_rules[0].age = \"$(age-plugin-yubikey --list | grep -oE 'age1yubikey1[A-Za-z0-9]+')\"" ~/projects/dotfiles/.sops.yaml
+   yq -i ".creation_rules[0].age = \"$(age-plugin-yubikey --list --slot 1 | grep -oE 'age1yubikey1[A-Za-z0-9]+')\"" ~/projects/dotfiles/.sops.yaml
    ```
 
 > [!NOTE]
