@@ -42,7 +42,7 @@ This repo uses a two-layer system. Never collapse these layers or short-circuit 
 The Bitwarden Secrets Manager (BWS) access token is the credential that unlocks all other secrets. It is:
 
 - Stored encrypted at `~/.local/secrets/bitwarden.yaml` using sops + age + YubiKey
-- Encrypted under the age recipient in `.sops.yaml` (a YubiKey-backed key, slot 1)
+- Encrypted under the age recipient in `.config/sops/.sops.yaml` (a YubiKey-backed key, slot 1); home-manager places a copy at `~/.config/sops/.sops.yaml`, which is what scripts pass to `sops --config`
 - Loaded into the shell by sourcing `bws-load-local-machine-credential` (alias), which decrypts the file with sops and exports `BWS_ACCESS_TOKEN` into the current shell session only
 
 The file `~/.local/secrets/bitwarden.yaml` is in `.gitignore` and must never be committed. It is re-created by running `bw_sync_encrypted_secrets.sh`.
@@ -85,7 +85,7 @@ Any script that must `export` variables into the calling shell must be sourced, 
 
 If a script must write a secret to a temporary file (e.g. for sops encryption), always:
 
-1. Create it with `mktemp` inside `~/.local/secrets/` so the `.sops.yaml` path regex matches and the correct YubiKey recipient is auto-selected
+1. Create it with `mktemp` inside `~/.local/secrets/` so the `.sops.yaml` path regex matches and the correct YubiKey recipient is auto-selected; pass `--config "$HOME/.config/sops/.sops.yaml"` explicitly — sops only discovers `.sops.yaml` by walking upward from the current working directory, so cwd-based discovery is not reliable in scripts
 2. Register an `EXIT` trap immediately: `trap 'shred -u "$TMPFILE" 2>/dev/null || rm -f "$TMPFILE"' EXIT`
 3. Use `shred -u` (not `rm`) as the primary cleanup method
 
@@ -145,7 +145,8 @@ Example of a correctly formatted table:
 | Path                                    | Purpose                                                                                                             |
 | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
 | `.config/home-manager/home.nix`         | All scripts, aliases, and packages are defined here as home-manager managed files                                   |
-| `.sops.yaml`                            | sops encryption rules — age recipient is the YubiKey public key, path regex targets `secrets/*.yaml`                |
+| `.config/sops/.sops.yaml`               | sops encryption rules — age recipient is the YubiKey public key, path regex targets `secrets/*.yaml`                |
+| `~/.config/sops/.sops.yaml`             | Deployed copy of the above, placed by home-manager — scripts pass this path to `sops --config`                      |
 | `~/.local/secrets/bitwarden.yaml`       | Encrypted BWS access token — gitignored, created by `bw_sync_encrypted_secrets.sh`                                  |
 | `~/.config/age/yubikey-identity.txt`    | YubiKey age identity stanza — required by sops at runtime via `SOPS_AGE_KEY_FILE`                                   |
 
@@ -157,3 +158,4 @@ Example of a correctly formatted table:
 | `bws-check-available-secrets`         | Lists UUID and Key of every secret the machine account can access                                                   |
 | `bws run -- <cmd>`                    | Runs `<cmd>` with all BWS secrets injected as environment variables                                                 |
 | `bw_sync_encrypted_secrets.sh`        | Fetches the BWS token from Bitwarden vault and writes it encrypted to `~/.local/secrets/bitwarden.yaml`             |
+| `sops-load-yubikey-recipient`         | Reads the age recipient from YubiKey slot 1 into the repo's `.config/sops/.sops.yaml` (run from inside the clone)   |

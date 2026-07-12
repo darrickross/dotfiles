@@ -279,17 +279,23 @@ age-plugin-yubikey --help
 
 ##### Load `age` Public Key into `.sops.yaml`
 
-> [!NOTE]
-> These steps are safe to run at any time. Make sure the YubiKey is available on the host Windows system before running them.
+> [!WARNING]
+> The recipient committed in `.config/sops/.sops.yaml` belongs to the repo owner's YubiKey. Anything encrypted to it can only be decrypted by that physical key. If you are not the repo owner — or you have replaced your YubiKey — you **must** replace the recipient with your own using the steps below before encrypting anything, otherwise you will create files you cannot decrypt.
 
-1. Load the recipient (public key) into `.sops.yaml`:
+These steps are safe to run at any time. Make sure the YubiKey is available on the host Windows system before running them.
+
+1. Load the recipient (public key) into `.config/sops/.sops.yaml`. The script locates the repo from your current directory, so run it from anywhere inside your dotfiles clone:
 
    ```bash
-   yq -i ".creation_rules[0].age = \"$(age-plugin-yubikey --list --slot 1 | grep -oE 'age1yubikey1[A-Za-z0-9]+')\"" ~/projects/dotfiles/.sops.yaml
+   cd $INSTALL_DIR
+   sops-load-yubikey-recipient
    ```
 
-> [!NOTE]
-> You will need to replace `~/projects/dotfiles/` with the path to the root of this dotfiles repository on your system.
+2. Apply the change so home-manager places the updated file at `~/.config/sops/.sops.yaml` (where scripts read it from):
+
+   ```bash
+   hms
+   ```
 
 ---
 

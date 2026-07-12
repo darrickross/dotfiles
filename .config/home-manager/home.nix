@@ -101,6 +101,65 @@
   # home.file = { ".bashrc".source = ../../.bashrc; };
 
   home.file = {
+    # sops creation rules (age recipient = YubiKey public key). Placed at a
+    # fixed home path so scripts can find it regardless of where this repo is
+    # cloned — sops only discovers .sops.yaml by walking upward from cwd, so
+    # scripts must pass --config with this path explicitly. Nix resolves the
+    # relative source at build time; the deployed file is a snapshot, so after
+    # editing .config/sops/.sops.yaml in the repo, run 'hms' to apply it.
+    ".config/sops/.sops.yaml" = {
+      source = ../sops/.sops.yaml;
+      force = true;
+    };
+
+    # Loads the age recipient from YubiKey slot 1 into the repo's
+    # .config/sops/.sops.yaml. Finds the repo from the current working
+    # directory (git rev-parse) so the clone location is never hardcoded —
+    # run it from anywhere inside the dotfiles clone, then run 'hms' to
+    # deploy the updated file to ~/.config/sops/.sops.yaml.
+    ".local/bin/sops-load-yubikey-recipient" = {
+      executable = true;
+      force = true;
+      text = ''
+        #!/usr/bin/env bash
+        set -euo pipefail
+
+        REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null) || {
+          echo "Error: not inside a git repository." >&2
+          echo "  cd into your dotfiles clone and re-run." >&2
+          exit 1
+        }
+
+        SOPS_FILE="$REPO_ROOT/.config/sops/.sops.yaml"
+        if [[ ! -f "$SOPS_FILE" ]]; then
+          echo "Error: $SOPS_FILE not found — is $REPO_ROOT the dotfiles repo?" >&2
+          exit 1
+        fi
+
+        # Read the recipient for slot 1 straight from the connected YubiKey.
+        # --identity respects --slot (plain --list does not filter by slot).
+        # This reads public metadata only — no PIN or touch required.
+        RECIPIENT=$(age-plugin-yubikey --identity --slot 1 | grep -oE 'age1yubikey1[a-z0-9]+' | head -1)
+        if [[ -z "$RECIPIENT" ]]; then
+          echo "Error: could not read an age recipient from YubiKey slot 1." >&2
+          echo "  Is the YubiKey plugged into the (Windows host) system?" >&2
+          exit 1
+        fi
+
+        CURRENT=$(yq '.creation_rules[0].age' "$SOPS_FILE")
+        if [[ "$CURRENT" == "$RECIPIENT" ]]; then
+          echo "Recipient already up to date in $SOPS_FILE"
+          exit 0
+        fi
+
+        yq -i ".creation_rules[0].age = \"$RECIPIENT\"" "$SOPS_FILE"
+        echo "Updated $SOPS_FILE"
+        echo "  old: $CURRENT"
+        echo "  new: $RECIPIENT"
+        echo "Run 'hms' to deploy it to ~/.config/sops/.sops.yaml"
+      '';
+    };
+
     # age-plugin-yubikey wrapper: forwards to the Windows host binary so that
     # age/sops in WSL2 can discover it via PATH and use the YubiKey over USB.
     # age plugin discovery works by spawning an executable named
@@ -195,6 +254,16 @@
 
         SECRETS_FILE="$HOME/.local/secrets/bitwarden.yaml"
 
+        # sops only searches upward from cwd for .sops.yaml, so cwd-based
+        # discovery breaks depending on where this script is invoked from.
+        # Pin it to the copy home-manager places at a fixed home path.
+        SOPS_CONFIG="$HOME/.config/sops/.sops.yaml"
+        if [[ ! -f "$SOPS_CONFIG" ]]; then
+          echo "Error: sops config not found at $SOPS_CONFIG" >&2
+          echo "  Run 'hms' (home-manager switch) to place it." >&2
+          exit 1
+        fi
+
         # If the secrets file already exists, ask the user before overwriting.
         # Exit if they decline; shred the old file if they confirm.
         if [[ -f "$SECRETS_FILE" ]]; then
@@ -228,7 +297,7 @@
         bw get item "local-machine-bws-secrets" | jq -r '.notes' > "$TMPFILE"
 
         # Encrypt in place
-        sops --encrypt "$TMPFILE" > "$SECRETS_FILE"
+        sops --config "$SOPS_CONFIG" --encrypt "$TMPFILE" > "$SECRETS_FILE"
         chmod 600 "$SECRETS_FILE"
 
         bw logout --quiet || true
