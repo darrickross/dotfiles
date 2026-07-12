@@ -225,7 +225,7 @@
         TMPFILE=$(mktemp "$HOME/.local/secrets/.sync.XXXXXX.yaml")
         trap 'shred -u "$TMPFILE" 2>/dev/null || rm -f "$TMPFILE"' EXIT
 
-        bw get item "homelab-cli-secrets" | jq -r '.notes' > "$TMPFILE"
+        bw get item "local-machine-bws-secrets" | jq -r '.notes' > "$TMPFILE"
 
         # Encrypt in place
         sops --encrypt "$TMPFILE" > "$SECRETS_FILE"
