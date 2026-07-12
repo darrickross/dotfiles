@@ -5,7 +5,7 @@
 The directory structure of this repo mirrors `~` exactly (`.config/`, `.ssh/`, etc.). Dotfiles are activated via Home Manager, not symlinked manually.
 
 - Shell config is native Home Manager: `programs.bash.*` options split across `.config/home-manager/modules/bash/*.nix` (history, prompt, aliases, shell options, logout) plus `.config/home-manager/modules/wsl.nix` — Home Manager generates `~/.bashrc` entirely from these
-- The repo's `.bashrc`, `.bash_profile`, `.profile`, and `.bash_logout` are **bootstrap stubs** only read before the first `home-manager switch`; do not add real configuration to them — put it in the modules
+- The repo intentionally contains **no** `.bashrc`, `.bash_profile`, `.profile`, or `.bash_logout` — Home Manager generates all of them. Do not add these files back; put shell configuration in the modules
 - Scripts and managed files are declared as `home.file` entries in `home.nix`
 - Adding a new managed file means declaring it in `home.nix` under `home.file` and running `hms`
 - Never hardcode the clone path (e.g. `~/projects/dotfiles`) in aliases or scripts — flakes evaluate from a nix-store copy, so the clone location is unknowable at build time. Resolve it at runtime with `$(dotfiles-root)`, which works backwards from the `~/.config/home-manager` symlink (a documented setup step that `hms` and `hmu` also depend on)
