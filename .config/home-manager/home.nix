@@ -96,13 +96,6 @@
       # "terraform"
     ];
 
-  # sops-nix: use YubiKey retired key slot as the age identity for decryption.
-  # age-plugin-yubikey uses the 20 retired key management slots (1-20), not the
-  # standard PIV slots (9a-9e). Generate with: age-plugin-yubikey --generate --slot 1
-  # No sops.secrets block — ~/.local/secrets/bitwarden.yaml is managed manually
-  # by bw_sync_encrypted_secrets.sh and never touched during home-manager activation.
-  sops.age.keyFile = "${config.home.homeDirectory}/.config/age/yubikey-identity.txt";
-
   # Home Manager is pretty good at managing dotfiles. The primary way to manage
   # plain files is through 'home.file'.
   # home.file = { ".bashrc".source = ../../.bashrc; };
