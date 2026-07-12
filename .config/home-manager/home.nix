@@ -112,6 +112,42 @@
       force = true;
     };
 
+    # Prints the root of the live dotfiles clone. Works backwards from
+    # ~/.config/home-manager/home.nix, which links into
+    # <repo>/.config/home-manager/ — the same convention 'hms' and 'hmu'
+    # already rely on to find the flake. The clone path cannot be baked in at
+    # build time: flakes evaluate from a nix-store copy of the repo, so
+    # home.nix never knows where the checkout lives. Resolving at runtime
+    # keeps every alias and script clone-location independent.
+    ".local/bin/dotfiles-root" = {
+      executable = true;
+      force = true;
+      text = ''
+        #!/usr/bin/env bash
+        set -euo pipefail
+
+        ANCHOR="$HOME/.config/home-manager/home.nix"
+
+        if [[ ! -e "$ANCHOR" ]]; then
+          echo "Error: $ANCHOR not found." >&2
+          echo "  Link your clone:  ln -s \"\$INSTALL_DIR/.config/home-manager\" ~/.config/home-manager" >&2
+          exit 1
+        fi
+
+        # readlink -f resolves whether home.nix itself is a symlink or a
+        # parent directory is; three dirnames walk out of .config/home-manager.
+        ROOT=$(dirname "$(dirname "$(dirname "$(readlink -f "$ANCHOR")")")")
+
+        if [[ ! -e "$ROOT/.git" ]]; then
+          echo "Error: resolved path $ROOT is not a git clone." >&2
+          echo "  $ANCHOR must link into <repo>/.config/home-manager/" >&2
+          exit 1
+        fi
+
+        printf '%s\n' "$ROOT"
+      '';
+    };
+
     # Loads the age recipient from YubiKey slot 1 into the repo's
     # .config/sops/.sops.yaml. Finds the repo from the current working
     # directory (git rev-parse) so the clone location is never hardcoded —
@@ -319,7 +355,7 @@
       compopt +o nospace 2>/dev/null && SUPPRESS_SPACE=1
       COMPREPLY=( $(IFS="$IFS" COMP_LINE="$COMP_LINE" COMP_POINT="$COMP_POINT" \
         _ARGCOMPLETE=1 _ARGCOMPLETE_SUPPRESS_SPACE=$SUPPRESS_SPACE \
-        python3 "$HOME/projects/dotfiles/scripts/qr-codes/generate.py" \
+        python3 "$(dotfiles-root)/scripts/qr-codes/generate.py" \
         8>&1 9>&2 1>/dev/null 2>/dev/null) )
       [[ $? == 0 && $SUPPRESS_SPACE == 1 ]] && compopt -o nospace
     }
@@ -345,10 +381,10 @@
     ls = "eza --git";
     hms = "home-manager switch && exec \$SHELL -l";
     hmu = "nix flake update --flake $(dirname $(readlink -f ~/.config/home-manager/flake.nix))";
-    rename-media = "python3 ~/projects/dotfiles/scripts/video/rename-media.py";
-    mkv-info = "python3 ~/projects/dotfiles/scripts/video/mkv-info.py";
-    mkv-scan = "python3 ~/projects/dotfiles/scripts/video/mkv-scan.py";
-    wifi-qr = "python3 ~/projects/dotfiles/scripts/qr-codes/generate.py";
+    rename-media = ''python3 "$(dotfiles-root)/scripts/video/rename-media.py"'';
+    mkv-info = ''python3 "$(dotfiles-root)/scripts/video/mkv-info.py"'';
+    mkv-scan = ''python3 "$(dotfiles-root)/scripts/video/mkv-scan.py"'';
+    wifi-qr = ''python3 "$(dotfiles-root)/scripts/qr-codes/generate.py"'';
     bws-load-local-machine-credential = "source $HOME/.local/bin/_bws-load-local-machine-credential";
   };
 

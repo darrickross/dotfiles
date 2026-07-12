@@ -7,6 +7,7 @@ The directory structure of this repo mirrors `~` exactly (`.config/`, `.ssh/`, e
 - Shell config (`.bashrc`) is sourced at build time via `programs.bash.bashrcExtra` in `home.nix` — Home Manager generates `~/.bashrc` and sources the repo file
 - Scripts and managed files are declared as `home.file` entries in `home.nix`
 - Adding a new managed file means declaring it in `home.nix` under `home.file` and running `hms`
+- Never hardcode the clone path (e.g. `~/projects/dotfiles`) in aliases or scripts — flakes evaluate from a nix-store copy, so the clone location is unknowable at build time. Resolve it at runtime with `$(dotfiles-root)`, which works backwards from the `~/.config/home-manager` symlink (a documented setup step that `hms` and `hmu` also depend on)
 
 ---
 
@@ -159,3 +160,4 @@ Example of a correctly formatted table:
 | `bws run -- <cmd>`                    | Runs `<cmd>` with all BWS secrets injected as environment variables                                                 |
 | `bw_sync_encrypted_secrets.sh`        | Fetches the BWS token from Bitwarden vault and writes it encrypted to `~/.local/secrets/bitwarden.yaml`             |
 | `sops-load-yubikey-recipient`         | Reads the age recipient from YubiKey slot 1 into the repo's `.config/sops/.sops.yaml` (run from inside the clone)   |
+| `dotfiles-root`                       | Prints the live clone's root, resolved backwards from the `~/.config/home-manager` symlink — never hardcode paths   |
