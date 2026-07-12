@@ -230,7 +230,7 @@
 
         bw get item "homelab-cli-secrets" | jq -r '.notes' > "$TMPFILE"
 
-        # Encrypt in place (requires YubiKey touch)
+        # Encrypt in place
         sops --encrypt "$TMPFILE" > "$SECRETS_FILE"
         chmod 600 "$SECRETS_FILE"
 
