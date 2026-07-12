@@ -189,6 +189,10 @@
         #!/usr/bin/env bash
         set -euo pipefail
 
+        # Ensure the secrets file (and the tmpfile below) are never created
+        # world/group readable, closing the window before chmod 600 runs.
+        umask 077
+
         SECRETS_FILE="$HOME/.local/secrets/bitwarden.yaml"
 
         # If the secrets file already exists, ask the user before overwriting.
