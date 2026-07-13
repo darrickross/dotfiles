@@ -14,9 +14,14 @@ id_ecdsa
 # Bitwarden secrets — encrypted file lives here, never committed
 .local/secrets/
 
-# SSH private keys (public keys and config are fine to track)
-.ssh/id_*
-.ssh/known_hosts
+# SSH: ignore everything by default, then allowlist the configs we track.
+# Keys (id_*, yubikey_sk_*), known_hosts, control sockets, and machine-local
+# configs (e.g. local_network.ssh_config) all stay untracked automatically.
+.ssh/*
+!.ssh/config
+!.ssh/configs/
+.ssh/configs/*
+!.ssh/configs/github.ssh_config
 
 # AWS credentials (config/profiles are fine, not actual keys)
 .aws/credentials
