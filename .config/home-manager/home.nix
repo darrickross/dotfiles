@@ -1,9 +1,10 @@
-{ config, pkgs, ... }:
+{ pkgs, ... }:
 
 {
   imports = [
     ./modules/bash
     ./modules/dotfiles.nix
+    ./modules/secrets.nix
     ./modules/wsl.nix
   ];
 
@@ -28,10 +29,10 @@
     # # fonts?
     # (nerdfonts.override { fonts = [ "FantasqueSansMono" ]; })
 
+    # NOTE: secrets tooling (bitwarden-cli, bws, jq, sops, yq-go) is declared
+    # in ./modules/secrets.nix next to the scripts that require it.
     ansible-lint
     bat
-    bitwarden-cli # used by bw_sync_encrypted_secrets.sh
-    bws # authenticated via BWS_ACCESS_TOKEN from the secrets file
     eza
     ffmpeg # ffprobe used by rename-media.py
     # fnm # Fast Node Manager - (VS Code plugin workflow)
@@ -84,15 +85,18 @@
     #   };
     #   vendorHash = "sha256-pDtWGDKEnYq4wJYG+Rr5C1pWN/X92P+wvHrNm0Ldh+8=";
     # }))
-    sops # used by bw_sync_encrypted_secrets.sh
     tree
     tldr
-    yq-go # used by bw_sync_encrypted_secrets.sh
+    yq-go
     # `yq` is a wrapper around `jq`
     # `yq-go` is a native yaml version
+    # Both install to `yq`
   ];
 
-  # Packages that are allowed to be "Unfree"
+  # Packages that are allowed to be "Unfree".
+  # This predicate is a single function and cannot be merged across modules,
+  # so it stays here even for packages declared elsewhere (bws is required
+  # by ./modules/secrets.nix).
   nixpkgs.config.allowUnfreePredicate =
     pkg:
     builtins.elem (pkgs.lib.getName pkg) [
@@ -105,8 +109,9 @@
   # ---------------------------------------------------------------------------
 
   # NOTE: plain config files tracked in this repo (.gitconfig, .ssh/config,
-  # sops rules, etc.) are deployed by ./modules/dotfiles.nix — only scripts
-  # live here.
+  # sops rules, etc.) are deployed by ./modules/dotfiles.nix, and the
+  # Bitwarden/sops secrets scripts live in ./modules/secrets.nix — only
+  # general-purpose scripts live here.
   home.file = {
     # Prints the root of the live dotfiles clone. Works backwards from
     # ~/.config/home-manager/home.nix, which links into
@@ -143,174 +148,6 @@
         printf '%s\n' "$ROOT"
       '';
     };
-
-    # Loads the age recipient from YubiKey slot 1 into the repo's
-    # .config/sops/.sops.yaml. Finds the repo from the current working
-    # directory (git rev-parse) so the clone location is never hardcoded —
-    # run it from anywhere inside the dotfiles clone, then run 'hms' to
-    # deploy the updated file to ~/.config/sops/.sops.yaml.
-    ".local/bin/sops-load-yubikey-recipient" = {
-      executable = true;
-      force = true;
-      text = ''
-        #!/usr/bin/env bash
-        set -euo pipefail
-
-        REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null) || {
-          echo "Error: not inside a git repository." >&2
-          echo "  cd into your dotfiles clone and re-run." >&2
-          exit 1
-        }
-
-        SOPS_FILE="$REPO_ROOT/.config/sops/.sops.yaml"
-        if [[ ! -f "$SOPS_FILE" ]]; then
-          echo "Error: $SOPS_FILE not found — is $REPO_ROOT the dotfiles repo?" >&2
-          exit 1
-        fi
-
-        # Read the recipient for slot 1 straight from the connected YubiKey.
-        # --identity respects --slot (plain --list does not filter by slot).
-        # This reads public metadata only — no PIN or touch required.
-        RECIPIENT=$(age-plugin-yubikey --identity --slot 1 | grep -oE 'age1yubikey1[a-z0-9]+' | head -1)
-        if [[ -z "$RECIPIENT" ]]; then
-          echo "Error: could not read an age recipient from YubiKey slot 1." >&2
-          echo "  Is the YubiKey plugged into the (Windows host) system?" >&2
-          exit 1
-        fi
-
-        CURRENT=$(yq '.creation_rules[0].age' "$SOPS_FILE")
-        if [[ "$CURRENT" == "$RECIPIENT" ]]; then
-          echo "Recipient already up to date in $SOPS_FILE"
-          exit 0
-        fi
-
-        yq -i ".creation_rules[0].age = \"$RECIPIENT\"" "$SOPS_FILE"
-        echo "Updated $SOPS_FILE"
-        echo "  old: $CURRENT"
-        echo "  new: $RECIPIENT"
-        echo "Run 'hms' to deploy it to ~/.config/sops/.sops.yaml"
-      '';
-    };
-
-    # Must be *sourced* (not executed) so that `export BWS_ACCESS_TOKEN`
-    # reaches the calling shell.  The underscore prefix signals this.
-    ".local/bin/_bws-load-local-machine-credential" = {
-      executable = true;
-      force = true;
-      text = ''
-        #!/usr/bin/env bash
-
-        # Refuse to run as a subprocess — exports would be lost on exit.
-        if [[ "''${BASH_SOURCE[0]}" == "''${0}" ]]; then
-          echo "Error: this script must be sourced, not executed." >&2
-          echo "  Run:  source bws-load-local-machine-credential" >&2
-          exit 1
-        fi
-
-        SECRETS_FILE="$HOME/.local/secrets/bitwarden.yaml"
-
-        if [[ ! -f "$SECRETS_FILE" ]]; then
-          echo "Error: secrets file not found at $SECRETS_FILE" >&2
-          echo "  Run bw_sync_encrypted_secrets.sh to create it." >&2
-          return 1
-        fi
-
-        BWS_ACCESS_TOKEN=$(
-          sops --decrypt --extract '["local_computer_machine_account_bws_access_token"]' \
-            "$SECRETS_FILE"
-        ) || { echo "Error: failed to decrypt $SECRETS_FILE" >&2; return 1; }
-        [[ -n "$BWS_ACCESS_TOKEN" ]] || { echo "Error: decrypted token is empty" >&2; return 1; }
-        export BWS_ACCESS_TOKEN
-
-        echo "BWS_ACCESS_TOKEN set for this shell session only."
-      '';
-    };
-
-    # Lists all secrets available in the BWS project (requires BWS_ACCESS_TOKEN).
-    ".local/bin/bws-check-available-secrets" = {
-      executable = true;
-      force = true;
-      text = ''
-        #!/usr/bin/env bash
-        set -euo pipefail
-
-        if [[ -z "''${BWS_ACCESS_TOKEN:-}" ]]; then
-          echo "Error: BWS_ACCESS_TOKEN is not set." >&2
-          echo "  Run:  bws-load-local-machine-credential" >&2
-          exit 1
-        fi
-
-        echo "             Secret UUID             | Key"
-
-        bws secret list --output json | jq -r '.[] | "\(.id) | \(.key)"'
-      '';
-    };
-
-    # Sync secrets from Bitwarden and re-encrypt locally with YubiKey.
-    # Run on first setup or after rotating tokens.
-    ".local/bin/bw_sync_encrypted_secrets.sh" = {
-      executable = true;
-      force = true;
-      text = ''
-        #!/usr/bin/env bash
-        set -euo pipefail
-
-        # Ensure the secrets file (and the tmpfile below) are never created
-        # world/group readable, closing the window before chmod 600 runs.
-        umask 077
-
-        SECRETS_FILE="$HOME/.local/secrets/bitwarden.yaml"
-
-        # sops only searches upward from cwd for .sops.yaml, so cwd-based
-        # discovery breaks depending on where this script is invoked from.
-        # Pin it to the copy home-manager places at a fixed home path.
-        SOPS_CONFIG="$HOME/.config/sops/.sops.yaml"
-        if [[ ! -f "$SOPS_CONFIG" ]]; then
-          echo "Error: sops config not found at $SOPS_CONFIG" >&2
-          echo "  Run 'hms' (home-manager switch) to place it." >&2
-          exit 1
-        fi
-
-        # If the secrets file already exists, ask the user before overwriting.
-        # Exit if they decline; shred the old file if they confirm.
-        if [[ -f "$SECRETS_FILE" ]]; then
-          read -r -p "Secrets file already exists at $SECRETS_FILE. Shred and replace it? [y/N] " CONFIRM
-          if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
-            echo "Aborted." >&2
-            exit 1
-          fi
-          shred -u "$SECRETS_FILE"
-          echo "Existing secrets file shredded."
-        fi
-
-        mkdir -p "$HOME/.local/secrets"
-
-        # Log in or unlock — bw unlock only works on an already-authenticated vault,
-        # so check status first and fall through to login on a fresh machine.
-        echo "Connecting to your Bitwarden account:"
-        BW_STATUS=$(bw status 2>/dev/null | jq -r '.status' 2>/dev/null || echo "unauthenticated")
-        if [[ "$BW_STATUS" == "unauthenticated" ]]; then
-          BW_SESSION=$(bw login --raw)
-        else
-          BW_SESSION=$(bw unlock --raw)
-        fi
-        export BW_SESSION
-
-        # Write notes to a tmpfile inside the secrets dir so the path matches
-        # the .sops.yaml creation rule and the YubiKey recipient is auto-selected.
-        TMPFILE=$(mktemp "$HOME/.local/secrets/.sync.XXXXXX.yaml")
-        trap 'shred -u "$TMPFILE" 2>/dev/null || rm -f "$TMPFILE"' EXIT
-
-        bw get item "local-machine-bws-secrets" | jq -r '.notes' > "$TMPFILE"
-
-        # Encrypt in place
-        sops --config "$SOPS_CONFIG" --encrypt "$TMPFILE" > "$SECRETS_FILE"
-        chmod 600 "$SECRETS_FILE"
-
-        bw logout --quiet || true
-        echo "Successfully synced secrets to $SECRETS_FILE"
-      '';
-    };
   };
 
   # ---------------------------------------------------------------------------
@@ -320,15 +157,6 @@
     "$HOME/.local/bin"
     "$HOME/bin"
   ];
-
-  # ---------------------------------------------------------------------------
-  # Session environment variables
-  # ---------------------------------------------------------------------------
-  home.sessionVariables = {
-    # Age identity file for sops decryption via YubiKey.
-    # Output of `age-plugin-yubikey --identity --slot 1` (see README YubiKey setup).
-    SOPS_AGE_KEY_FILE = "${config.home.homeDirectory}/.config/age/yubikey-identity.txt";
-  };
 
   # ---------------------------------------------------------------------------
   # Shell aliases (home-manager / tooling specific)
@@ -348,9 +176,6 @@
     mkv-info = ''python3 "$(dotfiles-root)/scripts/video/mkv-info.py"'';
     mkv-scan = ''python3 "$(dotfiles-root)/scripts/video/mkv-scan.py"'';
     wifi-qr = ''python3 "$(dotfiles-root)/scripts/qr-codes/generate.py"'';
-
-    # Bitwarden Secrets Manager
-    bws-load-local-machine-credential = "source $HOME/.local/bin/_bws-load-local-machine-credential";
   };
 
   # ---------------------------------------------------------------------------

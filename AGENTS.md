@@ -6,7 +6,7 @@ The directory structure of this repo mirrors `~` exactly (`.config/`, `.ssh/`, e
 
 - Shell config is native Home Manager: `programs.bash.*` options split across `.config/home-manager/modules/bash/*.nix` (history, prompt, aliases, shell options, logout) plus `.config/home-manager/modules/wsl.nix` — Home Manager generates `~/.bashrc` entirely from these
 - The repo intentionally contains **no** `.bashrc`, `.bash_profile`, `.profile`, or `.bash_logout` — Home Manager generates all of them. Do not add these files back; put shell configuration in the modules
-- Scripts are declared as `home.file` entries in `home.nix`
+- General-purpose scripts are declared as `home.file` entries in `home.nix`; the Bitwarden/sops secrets scripts and their package dependencies live together in `.config/home-manager/modules/secrets.nix`
 - Plain config files tracked in this repo (`.gitconfig`, `.ssh/config`, `.aws/config`, `.config/gh/config.yml`, `.config/ohmyposh/bash_prompt.toml`, `.config/nix/nix.conf`, `.config/sops/.sops.yaml`) are deployed by `.config/home-manager/modules/dotfiles.nix` — the repo copy is the source of truth; edit it there, then run `hms`. Deployed copies are read-only nix-store symlinks, so never edit a config through its `~` path or with a tool that rewrites its own config (`gh config set`, `aws configure`)
 - Adding a new managed file means declaring it in `home.nix` under `home.file` (scripts) or in `modules/dotfiles.nix` (config files, which must be git-tracked to be visible to the flake) and running `hms`
 - Never hardcode the clone path (e.g. `~/projects/dotfiles`) in aliases or scripts — flakes evaluate from a nix-store copy, so the clone location is unknowable at build time. Resolve it at runtime with `$(dotfiles-root)`, which works backwards from the `~/.config/home-manager` symlink (a documented setup step that `hms` and `hmu` also depend on)
@@ -150,6 +150,7 @@ Example of a correctly formatted table:
 | `.config/home-manager/home.nix`             | All scripts, aliases, and packages are defined here as home-manager managed files                             |
 | `.config/home-manager/modules/`             | Native bash config (`bash/*.nix`: history, prompt, aliases, options, logout) and WSL2 integration (`wsl.nix`) |
 | `.config/home-manager/modules/dotfiles.nix` | Registry of tracked config files home-manager deploys into `$HOME` — add new plain config files here          |
+| `.config/home-manager/modules/secrets.nix`  | Secrets tooling: Bitwarden/sops packages and scripts (`bw_sync_encrypted_secrets.sh`, credential loaders)     |
 | `.config/sops/.sops.yaml`                   | sops encryption rules — age recipient is the YubiKey public key, path regex targets `secrets/*.yaml`          |
 | `~/.config/sops/.sops.yaml`                 | Deployed copy of the above, placed by home-manager — scripts pass this path to `sops --config`                |
 | `~/.local/secrets/bitwarden.yaml`           | Encrypted BWS access token — gitignored, created by `bw_sync_encrypted_secrets.sh`                            |
