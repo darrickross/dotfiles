@@ -9,7 +9,9 @@
 [credential "https://gist.github.com"]
     helper = !gh auth git-credential
 [gpg]
-    program = /mnt/c/Program Files (x86)/GnuPG/bin/gpg.exe
+    # Wrapper deployed by home-manager (modules/wsl.nix): forwards to the
+    # Windows Gpg4win gpg.exe on WSL2, falls through to the system gpg elsewhere.
+    program = /home/itsjustmech/.local/bin/gpg
     format = openpgp
 [commit]
     gpgSign = true
