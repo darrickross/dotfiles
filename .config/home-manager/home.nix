@@ -3,6 +3,7 @@
 {
   imports = [
     ./modules/bash
+    ./modules/dotfiles.nix
     ./modules/wsl.nix
   ];
 
@@ -103,18 +104,10 @@
   # Managed scripts / executables in ~/.local/bin
   # ---------------------------------------------------------------------------
 
+  # NOTE: plain config files tracked in this repo (.gitconfig, .ssh/config,
+  # sops rules, etc.) are deployed by ./modules/dotfiles.nix — only scripts
+  # live here.
   home.file = {
-    # sops creation rules (age recipient = YubiKey public key). Placed at a
-    # fixed home path so scripts can find it regardless of where this repo is
-    # cloned — sops only discovers .sops.yaml by walking upward from cwd, so
-    # scripts must pass --config with this path explicitly. Nix resolves the
-    # relative source at build time; the deployed file is a snapshot, so after
-    # editing .config/sops/.sops.yaml in the repo, run 'hms' to apply it.
-    ".config/sops/.sops.yaml" = {
-      source = ../sops/.sops.yaml;
-      force = true;
-    };
-
     # Prints the root of the live dotfiles clone. Works backwards from
     # ~/.config/home-manager/home.nix, which links into
     # <repo>/.config/home-manager/ — the same convention 'hms' and 'hmu'
@@ -196,19 +189,6 @@
         echo "  old: $CURRENT"
         echo "  new: $RECIPIENT"
         echo "Run 'hms' to deploy it to ~/.config/sops/.sops.yaml"
-      '';
-    };
-
-    # age-plugin-yubikey wrapper: forwards to the Windows host binary so that
-    # age/sops in WSL2 can discover it via PATH.  A shell alias won't work
-    # because age plugin discovery requires a real executable named
-    # "age-plugin-<name>" on PATH.
-    ".local/bin/age-plugin-yubikey" = {
-      executable = true;
-      force = true;
-      text = ''
-        #!/usr/bin/env bash
-        exec "/mnt/c/Program Files/age-plugin-yubikey/age-plugin-yubikey.exe" "$@"
       '';
     };
 
