@@ -1,13 +1,18 @@
 # Enforce LF line endings for all files
 * text=auto eol=lf
 
-# Explicitly mark binary files as binary (no line ending conversion)
-*.png binary
-*.jpg binary
-*.jpeg binary
-*.tif binary
-*.tiff binary
-*.pdf binary
-*.ico binary
-*.p12 binary
-*.pfx binary
+# Convert leading tabs to spaces on staging (filter defined in .gitconfig).
+# Opt a file out by adding a `-filter` line for it below.
+* filter=tabs2spaces
+
+# Explicitly mark binary files as binary (no line ending conversion,
+# no tab conversion)
+*.png binary -filter
+*.jpg binary -filter
+*.jpeg binary -filter
+*.tif binary -filter
+*.tiff binary -filter
+*.pdf binary -filter
+*.ico binary -filter
+*.p12 binary -filter
+*.pfx binary -filter

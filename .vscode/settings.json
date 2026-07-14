@@ -10,9 +10,12 @@
     "clearsign",
     "CLIENTID",
     "CLIENTSECRET",
+    "compgen",
     "compopt",
     "COMPREPLY",
+    "CWORD",
     "dircolors",
+    "docstrings",
     "dotfile",
     "dotfiles",
     "DRYRUN",
@@ -32,6 +35,7 @@
     "gpgsplit",
     "gpgtar",
     "gpgv",
+    "heredocs",
     "histappend",
     "homelab",
     "ignoreboth",
@@ -47,6 +51,7 @@
     "linecap",
     "linejoin",
     "lrwxrwxrwx",
+    "mapfile",
     "mktemp",
     "mkvtoolnix",
     "nbsp",
@@ -79,6 +84,7 @@
     "stylesheet",
     "svgns",
     "timonwong",
+    "toplevel",
     "usbipd",
     "vdir",
     "venv",
@@ -94,12 +100,9 @@
   "evenBetterToml.formatter.indentString": "  ",
   "evenBetterToml.formatter.indentTables": true,
   "evenBetterToml.formatter.reorderKeys": true,
-  // Associate .stow-local-ignore files with the ignore language
-  // As its basically the same thing but for stow instead of git
   "files.associations": {
     "config": "ssh_config",
-    "*.ssh_config": "ssh_config",
-    ".stow-local-ignore": "ignore"
+    "*.ssh_config": "ssh_config"
   },
   "nix.formatterPath": "nixfmt",
   // Shellformater v7.2.8 has problems, work around is to downgrade to v7.2.5

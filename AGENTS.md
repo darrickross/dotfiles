@@ -4,19 +4,24 @@
 
 The directory structure of this repo mirrors `~` exactly (`.config/`, `.ssh/`, etc.). Dotfiles are activated via Home Manager, not symlinked manually.
 
-- Shell config (`.bashrc`) is sourced at build time via `programs.bash.bashrcExtra` in `home.nix` — Home Manager generates `~/.bashrc` and sources the repo file
-- Scripts and managed files are declared as `home.file` entries in `home.nix`
-- Adding a new managed file means declaring it in `home.nix` under `home.file` and running `hms`
+- Shell config is native Home Manager: `programs.bash.*` options split across `.config/home-manager/modules/bash/*.nix` (history, prompt, aliases, shell options, logout) plus `.config/home-manager/modules/wsl.nix` — Home Manager generates `~/.bashrc` entirely from these
+- The repo intentionally contains **no** `.bashrc`, `.bash_profile`, `.profile`, or `.bash_logout` — Home Manager generates all of them. Do not add these files back; put shell configuration in the modules
+- General-purpose scripts are declared as `home.file` entries in `home.nix`; the Bitwarden/sops secrets scripts and their package dependencies live together in `.config/home-manager/modules/secrets.nix`
+- Plain config files tracked in this repo (`.gitconfig`, `.ssh/config`, `.aws/config`, `.config/gh/config.yml`, `.config/ohmyposh/bash_prompt.toml`, `.config/nix/nix.conf`, `.config/sops/.sops.yaml`) are deployed by `.config/home-manager/modules/dotfiles.nix` — the repo copy is the source of truth; edit it there, then run `hms`. Deployed copies are read-only nix-store symlinks, so never edit a config through its `~` path or with a tool that rewrites its own config (`gh config set`, `aws configure`)
+- Adding a new managed file means declaring it in `home.nix` under `home.file` (scripts) or in `modules/dotfiles.nix` (config files, which must be git-tracked to be visible to the flake) and running `hms`
+- Never hardcode the clone path (e.g. `~/projects/dotfiles`) in aliases or scripts — flakes evaluate from a nix-store copy, so the clone location is unknowable at build time. Resolve it at runtime with `$(dotfiles-root)`, which works backwards from the `~/.config/home-manager` symlink (a documented setup step that `hms` and `hmu` also depend on)
 
 ---
 
 ## Home Manager — source of truth for scripts, aliases, and packages
 
-All shell scripts, aliases, and installed packages are managed in [`.config/home-manager/home.nix`](.config/home-manager/home.nix). Do not install packages with `nix-env`, `pip`, `apt`, or any other package manager.
+All shell scripts, aliases, and installed packages are managed declaratively under [`.config/home-manager/`](.config/home-manager/). Do not install packages with `nix-env`, `pip`, `apt`, or any other package manager.
 
-- To add a package: add it to the `home.packages` list in `home.nix`
-- To add a script or alias: add a `home.file` or `programs.bash.shellAliases` entry in `home.nix`
-- After any change to `home.nix`: run `hms` (`home-manager switch && exec $SHELL -l`) to apply it
+Each module declares the packages, scripts, and aliases **it** needs, next to the code that needs them — even when that overlaps with another module. `home.packages` lists from all modules are merged and identical packages dedupe to the same store path, so declaring `jq` in both `home.nix` and `modules/secrets.nix` is correct, not a conflict. Do not "clean up" a dependency out of a module because another module happens to also declare it — that couples the modules invisibly.
+
+- To add a package: add it to `home.packages` in the module that uses it — general-purpose tools in `home.nix`, secrets tooling in `modules/secrets.nix`, WSL-specific pieces in `modules/wsl.nix`
+- To add a script or alias: add a `home.file` or `programs.bash.shellAliases` entry in the module it belongs to (general-purpose scripts live in `home.nix`)
+- After any change to the nix config: run `hms` (`home-manager switch && exec $SHELL -l`) to apply it
 - To update flake inputs (nixpkgs, home-manager): run `hmu` (`nix flake update`)
 - Python packages are pinned in `home.nix` — add new dependencies there, not with `pip install`
 
@@ -26,10 +31,11 @@ All shell scripts, aliases, and installed packages are managed in [`.config/home
 
 This machine runs Linux under WSL2. Several tools forward to Windows binaries to access hardware (YubiKey USB) that is not passed through to WSL.
 
-- **GPG** — aliased to `/mnt/c/Program Files (x86)/GnuPG/bin/gpg.exe` (Gpg4win)
+- **GPG** — `~/.local/bin/gpg` is a wrapper (deployed by `wsl.nix`) that forwards to the Gpg4win `gpg.exe` on WSL and falls through to the system gpg elsewhere. The tracked `.gitconfig` stays portable: it `[include]`s `~/.gitconfig.local`, a file `wsl.nix` generates with the machine's absolute `gpg.program` path (git skips the include where the file is absent). Interactive shells additionally alias the full gpg tool family to the Windows binaries
 - **age-plugin-yubikey** — `~/.local/bin/age-plugin-yubikey` is a wrapper that calls the Windows `.exe`; do not replace it with a Linux binary or the YubiKey age identity will stop working
 - **SSH SK helper** — `SSH_SK_HELPER` points to `/mnt/c/Program Files/OpenSSH/ssh-sk-helper.exe`
 - YubiKey USB is **not** forwarded to WSL via usbipd; all YubiKey operations must go through these Windows wrappers
+- `modules/wsl.nix` refuses to activate off WSL2: an activation-time check aborts `home-manager switch` before writing anything. When porting this config to a non-WSL machine, remove `./modules/wsl.nix` from the imports in `home.nix`
 
 ---
 
@@ -42,7 +48,7 @@ This repo uses a two-layer system. Never collapse these layers or short-circuit 
 The Bitwarden Secrets Manager (BWS) access token is the credential that unlocks all other secrets. It is:
 
 - Stored encrypted at `~/.local/secrets/bitwarden.yaml` using sops + age + YubiKey
-- Encrypted under the age recipient in `.sops.yaml` (a YubiKey-backed key, slot 1)
+- Encrypted under the age recipient in `.config/sops/.sops.yaml` (a YubiKey-backed key, slot 1); home-manager places a copy at `~/.config/sops/.sops.yaml`, which is what scripts pass to `sops --config`
 - Loaded into the shell by sourcing `bws-load-local-machine-credential` (alias), which decrypts the file with sops and exports `BWS_ACCESS_TOKEN` into the current shell session only
 
 The file `~/.local/secrets/bitwarden.yaml` is in `.gitignore` and must never be committed. It is re-created by running `bw_sync_encrypted_secrets.sh`.
@@ -85,7 +91,7 @@ Any script that must `export` variables into the calling shell must be sourced, 
 
 If a script must write a secret to a temporary file (e.g. for sops encryption), always:
 
-1. Create it with `mktemp` inside `~/.local/secrets/` so the `.sops.yaml` path regex matches and the correct YubiKey recipient is auto-selected
+1. Create it with `mktemp` inside `~/.local/secrets/` so the `.sops.yaml` path regex matches and the correct YubiKey recipient is auto-selected; pass `--config "$HOME/.config/sops/.sops.yaml"` explicitly — sops only discovers `.sops.yaml` by walking upward from the current working directory, so cwd-based discovery is not reliable in scripts
 2. Register an `EXIT` trap immediately: `trap 'shred -u "$TMPFILE" 2>/dev/null || rm -f "$TMPFILE"' EXIT`
 3. Use `shred -u` (not `rm`) as the primary cleanup method
 
@@ -125,6 +131,8 @@ All text files use LF line endings — enforced by `.gitattributes`. When creati
 
 ### Tables
 
+These rules apply to any Markdown table written for humans to read: `.md` files, and tables embedded in code documentation (Python docstrings, heredocs, script `--help` text, code comments). They can safely be skipped in agent-owned files — `AGENTS.md`, `CLAUDE.md`, agent memory/scratch files, and similar — where only agents are the audience.
+
 - Align column separator pipes so all rows in a column have the same width — pad with spaces
 - The separator row (dashes) must match the width of the widest cell in each column
 - Always include a space inside each cell: `| cell |` not `|cell|`
@@ -138,22 +146,37 @@ Example of a correctly formatted table:
 | x       | y                      |
 ```
 
+`scripts/markdown/fix-tables.py` automates this — write the table without worrying about padding, then run it. It preserves GFM alignment markers, skips tables inside fenced code blocks, and handles wide (CJK) characters:
+
+```bash
+scripts/markdown/fix-tables.py README.md docs/*.md   # rewrite files in place
+scripts/markdown/fix-tables.py --check --diff *.md   # report + diff, don't write
+cat notes.md | scripts/markdown/fix-tables.py        # stdin -> stdout (for heredoc/docstring content)
+```
+
 ---
 
 ## Key files
 
-| Path                                    | Purpose                                                                                                             |
-| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `.config/home-manager/home.nix`         | All scripts, aliases, and packages are defined here as home-manager managed files                                   |
-| `.sops.yaml`                            | sops encryption rules — age recipient is the YubiKey public key, path regex targets `secrets/*.yaml`                |
-| `~/.local/secrets/bitwarden.yaml`       | Encrypted BWS access token — gitignored, created by `bw_sync_encrypted_secrets.sh`                                  |
-| `~/.config/age/yubikey-identity.txt`    | YubiKey age identity stanza — required by sops at runtime via `SOPS_AGE_KEY_FILE`                                   |
+| Path                                        | Purpose                                                                                                       |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `.config/home-manager/home.nix`             | All scripts, aliases, and packages are defined here as home-manager managed files                             |
+| `.config/home-manager/modules/`             | Native bash config (`bash/*.nix`: history, prompt, aliases, options, logout) and WSL2 integration (`wsl.nix`) |
+| `.config/home-manager/modules/dotfiles.nix` | Registry of tracked config files home-manager deploys into `$HOME` — add new plain config files here          |
+| `.config/home-manager/modules/secrets.nix`  | Secrets tooling: Bitwarden/sops packages and scripts (`bw_sync_encrypted_secrets.sh`, credential loaders)     |
+| `.config/sops/.sops.yaml`                   | sops encryption rules — age recipient is the YubiKey public key, path regex targets `secrets/*.yaml`          |
+| `~/.config/sops/.sops.yaml`                 | Deployed copy of the above, placed by home-manager — scripts pass this path to `sops --config`                |
+| `~/.local/secrets/bitwarden.yaml`           | Encrypted BWS access token — gitignored, created by `bw_sync_encrypted_secrets.sh`                            |
+| `~/.config/age/yubikey-identity.txt`        | YubiKey age identity stanza — required by sops at runtime via `SOPS_AGE_KEY_FILE`                             |
 
 ## Available commands (after home-manager switch)
 
-| Command                               | What it does                                                                                                        |
-| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `bws-load-local-machine-credential`   | Sources `_bws-load-local-machine-credential`, decrypts and exports `BWS_ACCESS_TOKEN`                               |
-| `bws-check-available-secrets`         | Lists UUID and Key of every secret the machine account can access                                                   |
-| `bws run -- <cmd>`                    | Runs `<cmd>` with all BWS secrets injected as environment variables                                                 |
-| `bw_sync_encrypted_secrets.sh`        | Fetches the BWS token from Bitwarden vault and writes it encrypted to `~/.local/secrets/bitwarden.yaml`             |
+| Command                             | What it does                                                                                                              |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `bws-load-local-machine-credential` | Sources `_bws-load-local-machine-credential`, decrypts and exports `BWS_ACCESS_TOKEN`                                     |
+| `bws-check-available-secrets`       | Lists UUID and Key of every secret the machine account can access                                                         |
+| `bws run -- <cmd>`                  | Runs `<cmd>` with all BWS secrets injected as environment variables                                                       |
+| `bw_sync_encrypted_secrets.sh`      | Fetches the BWS token from Bitwarden vault and writes it encrypted to `~/.local/secrets/bitwarden.yaml`                   |
+| `sops-load-yubikey-recipient`       | Reads the age recipient from YubiKey slot 1 into the repo's `.config/sops/.sops.yaml` (locates clone via `dotfiles-root`) |
+| `dotfiles-root`                     | Prints the live clone's root, resolved backwards from the `~/.config/home-manager` symlink — never hardcode paths         |
+| `dotfiles-check`                    | Validates the repo: nixfmt, flake eval, shellcheck on rendered scripts (`scripts/checks/check.py --help`)                 |
