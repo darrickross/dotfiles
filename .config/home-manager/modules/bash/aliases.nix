@@ -2,7 +2,7 @@
 { pkgs, ... }:
 {
   # Modern replacements backing the `cat`/`ls` aliases below.
-  # (Also listed in home.nix; home.packages entries merge and dedupe.)
+  # (Also listed in home.nix; home.packages entries merge and deduplicate.)
   home.packages = with pkgs; [
     bat
     eza
