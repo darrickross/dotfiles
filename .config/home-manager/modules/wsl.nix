@@ -57,9 +57,12 @@ in
       fi
 
       # Not WSL: run the first gpg on PATH that is not this wrapper.
+      # exec-in-loop is intentional (run the first candidate, never return),
+      # so silence shellcheck's "script continues after exec" warning.
       SELF=$(readlink -f "''${BASH_SOURCE[0]}")
       while IFS= read -r CANDIDATE; do
         [[ $(readlink -f "$CANDIDATE") == "$SELF" ]] && continue
+        # shellcheck disable=SC2093
         exec "$CANDIDATE" "$@"
       done < <(type -ap gpg)
 

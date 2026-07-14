@@ -172,6 +172,10 @@
 
     # Project scripts — resolved from the live clone at invocation time,
     # never a hardcoded clone path (see dotfiles-root above).
+    # Repo validation: nixfmt --check, flake eval, shellcheck on rendered
+    # scripts. Run after editing any .nix file, before 'hms'.
+    dotfiles-check = ''python3 "$(dotfiles-root)/scripts/checks/check.py"'';
+
     rename-media = ''python3 "$(dotfiles-root)/scripts/video/rename-media.py"'';
     mkv-info = ''python3 "$(dotfiles-root)/scripts/video/mkv-info.py"'';
     mkv-scan = ''python3 "$(dotfiles-root)/scripts/video/mkv-scan.py"'';

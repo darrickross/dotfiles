@@ -169,3 +169,4 @@ Example of a correctly formatted table:
 | `bw_sync_encrypted_secrets.sh`      | Fetches the BWS token from Bitwarden vault and writes it encrypted to `~/.local/secrets/bitwarden.yaml`                   |
 | `sops-load-yubikey-recipient`       | Reads the age recipient from YubiKey slot 1 into the repo's `.config/sops/.sops.yaml` (locates clone via `dotfiles-root`) |
 | `dotfiles-root`                     | Prints the live clone's root, resolved backwards from the `~/.config/home-manager` symlink — never hardcode paths         |
+| `dotfiles-check`                    | Validates the repo: nixfmt, flake eval, shellcheck on rendered scripts (`scripts/checks/check.py --help`)                 |
