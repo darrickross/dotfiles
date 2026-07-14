@@ -31,7 +31,7 @@ Each module declares the packages, scripts, and aliases **it** needs, next to th
 
 This machine runs Linux under WSL2. Several tools forward to Windows binaries to access hardware (YubiKey USB) that is not passed through to WSL.
 
-- **GPG** — `~/.local/bin/gpg` is a wrapper (deployed by `wsl.nix`) that forwards to the Gpg4win `gpg.exe` on WSL and falls through to the system gpg elsewhere; `.gitconfig` points `gpg.program` at it. Interactive shells additionally alias the full gpg tool family to the Windows binaries
+- **GPG** — `~/.local/bin/gpg` is a wrapper (deployed by `wsl.nix`) that forwards to the Gpg4win `gpg.exe` on WSL and falls through to the system gpg elsewhere. The tracked `.gitconfig` stays portable: it `[include]`s `~/.gitconfig.local`, a file `wsl.nix` generates with the machine's absolute `gpg.program` path (git skips the include where the file is absent). Interactive shells additionally alias the full gpg tool family to the Windows binaries
 - **age-plugin-yubikey** — `~/.local/bin/age-plugin-yubikey` is a wrapper that calls the Windows `.exe`; do not replace it with a Linux binary or the YubiKey age identity will stop working
 - **SSH SK helper** — `SSH_SK_HELPER` points to `/mnt/c/Program Files/OpenSSH/ssh-sk-helper.exe`
 - YubiKey USB is **not** forwarded to WSL via usbipd; all YubiKey operations must go through these Windows wrappers

@@ -5,7 +5,7 @@
 # `gpgconf`, which must resolve to the aliased Windows binary set in the
 # first block.  Merging them into one block would cause SC2262 (alias not
 # yet in effect).  See https://www.shellcheck.net/wiki/SC2262
-{ lib, ... }:
+{ config, lib, ... }:
 let
   # Single source of truth for the Windows Gpg4win install location — used
   # by the gpg wrapper and every alias below. If Gpg4win moves (e.g. a
@@ -65,6 +65,19 @@ in
 
       echo "gpg: no gpg executable found on PATH besides this wrapper" >&2
       exit 127
+    '';
+  };
+
+  # git needs an absolute path to the gpg wrapper — PATH is not reliable for
+  # non-interactive git invocations (IDEs, hooks) — but the home directory
+  # differs per machine. The tracked .gitconfig therefore [include]s this
+  # generated file instead of hardcoding the path; git silently skips the
+  # include on machines where wsl.nix (and thus this file) is absent.
+  home.file.".gitconfig.local" = {
+    force = true;
+    text = ''
+      [gpg]
+          program = ${config.home.homeDirectory}/.local/bin/gpg
     '';
   };
 
