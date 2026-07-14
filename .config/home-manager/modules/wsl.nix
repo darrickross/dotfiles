@@ -102,6 +102,15 @@ in
       alias gpgtar="'${gpg4win}/gpgtar.exe'"
       alias gpgv="'${gpg4win}/gpgv.exe'"
 
+    else
+      # This .bashrc was generated with modules/wsl.nix imported, so the
+      # environment is expected to be WSL2 (assertWsl enforces that at
+      # `hms` time). Reaching this branch means the shell is running
+      # somewhere else — a container, a copied home directory, or broken
+      # WSL interop — and every Windows-forwarded tool is unavailable.
+      echo "wsl.nix: this shell expects WSL2 resources that are missing —" \
+        "gpg/YubiKey, age-plugin-yubikey, clipboard, and SSH_AUTH_SOCK" \
+        "will not work here" >&2
     fi
 
     # Must be a separate block so the gpgconf alias above is already active.
