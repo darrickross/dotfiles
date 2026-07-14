@@ -14,6 +14,18 @@
 # The sops creation rules themselves (.config/sops/.sops.yaml) are deployed
 # by ./dotfiles.nix like every other tracked config file.
 { config, pkgs, ... }:
+let
+  # Name of the Bitwarden *vault* item (personal vault, not Secrets Manager)
+  # that bw_sync_encrypted_secrets.sh fetches. It must be a Secure Note whose
+  # Notes field contains the YAML documented in README.md ("local-machine-
+  # bws-secrets Secure Note" section), including the BWS access token.
+  #
+  # This name must match the item in the vault exactly — if you rename the
+  # item in Bitwarden, change it here and re-run 'hms', or the sync script
+  # will fail at `bw get item` and the encrypted token file can no longer
+  # be recreated.
+  bitwardenVaultItem = "local-machine-bws-secrets";
+in
 {
   # Guard against the wrong yq: nixpkgs has both `yq` (a python wrapper
   # around jq with different syntax) and `yq-go` (the native Go
@@ -240,9 +252,9 @@
         # Validate the notes field before writing anything — jq outputs the
         # literal string "null" when the field is absent, which would
         # otherwise be encrypted and stored as broken YAML (AGENTS.md).
-        NOTES=$(bw get item "local-machine-bws-secrets" | jq -r '.notes')
+        NOTES=$(bw get item "${bitwardenVaultItem}" | jq -r '.notes')
         [[ "$NOTES" != "null" && -n "$NOTES" ]] || {
-          echo "Error: notes field is empty or missing on 'local-machine-bws-secrets'" >&2
+          echo "Error: notes field is empty or missing on '${bitwardenVaultItem}'" >&2
           exit 1
         }
 
