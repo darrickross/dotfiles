@@ -19,6 +19,11 @@
     };
 
     initExtra = ''
+      # cd into a directory and list its contents on success.
+      cd() {
+        builtin cd "$@" && ls -al
+      }
+
       # Enable colour output for grep family (ls colour is handled by eza alias).
       if [ -x /usr/bin/dircolors ]; then
         test -r ~/.dircolors \
