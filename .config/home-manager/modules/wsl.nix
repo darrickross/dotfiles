@@ -5,8 +5,28 @@
 # `gpgconf`, which must resolve to the aliased Windows binary set in the
 # first block.  Merging them into one block would cause SC2262 (alias not
 # yet in effect).  See https://www.shellcheck.net/wiki/SC2262
-{ ... }:
+{ lib, ... }:
+let
+  # Single source of truth for the Windows Gpg4win install location — used
+  # by the gpg wrapper and every alias below. If Gpg4win moves (e.g. a
+  # future installer drops the "(x86)" directory), change it here only.
+  gpg4win = "/mnt/c/Program Files (x86)/GnuPG/bin";
+in
 {
+  # This module forwards YubiKey/GPG/SSH operations to Windows-side binaries
+  # and is meaningless off WSL2. Fail `home-manager switch` up front (before
+  # any files are written) instead of deploying wrappers that would break at
+  # first use. Nix `assertions` evaluate purely and cannot inspect the
+  # machine, so this is an activation-time check instead.
+  home.activation.assertWsl = lib.hm.dag.entryBefore [ "writeBoundary" ] ''
+    if ! grep -qEi "(Microsoft|WSL)" /proc/version 2>/dev/null; then
+      errorEcho "modules/wsl.nix: this machine does not look like WSL2 (/proc/version)."
+      errorEcho "This module forwards YubiKey/GPG operations to Windows binaries;"
+      errorEcho "remove ./modules/wsl.nix from the imports in home.nix on non-WSL machines."
+      exit 1
+    fi
+  '';
+
   # age-plugin-yubikey wrapper: forwards to the Windows host binary so that
   # age/sops in WSL2 can discover it via PATH.  A shell alias won't work
   # because age plugin discovery requires a real executable named
@@ -23,15 +43,17 @@
   # gpg wrapper: git's gpg.program (see .gitconfig) points here so commit
   # signing reaches the Windows Gpg4win install (and the YubiKey) from WSL2.
   # The interactive alias below is not enough — git invokes gpg directly,
-  # not through an interactive shell.  On non-WSL machines the wrapper falls
-  # through to the first real gpg on PATH, keeping .gitconfig portable.
+  # not through an interactive shell.  The non-WSL fallthrough to the first
+  # real gpg on PATH is defense in depth: the assertWsl check above means
+  # home-manager never deploys this module off WSL, but a hand-copied
+  # wrapper still degrades gracefully.
   home.file.".local/bin/gpg" = {
     executable = true;
     force = true;
     text = ''
       #!/usr/bin/env bash
       if grep -qEi "(Microsoft|WSL)" /proc/version 2>/dev/null; then
-        exec "/mnt/c/Program Files (x86)/GnuPG/bin/gpg.exe" "$@"
+        exec "${gpg4win}/gpg.exe" "$@"
       fi
 
       # Not WSL: run the first gpg on PATH that is not this wrapper.
@@ -56,14 +78,16 @@
       export SSH_SK_HELPER="/mnt/c/Program Files/OpenSSH/ssh-sk-helper.exe"
 
       # Route all GPG operations through the Windows GnuPG installation.
-      alias gpg="/mnt/c/Program\ Files\ \(x86\)/GnuPG/bin/gpg.exe"
-      alias gpg-agent="/mnt/c/Program\ Files\ \(x86\)/GnuPG/bin/gpg-agent.exe"
-      alias gpg-connect-agent="/mnt/c/Program\ Files\ \(x86\)/GnuPG/bin/gpg-connect-agent.exe"
-      alias gpg-wks-client="/mnt/c/Program\ Files\ \(x86\)/GnuPG/bin/gpg-wks-client.exe"
-      alias gpgconf="/mnt/c/Program\ Files\ \(x86\)/GnuPG/bin/gpgconf.exe"
-      alias gpgsm="/mnt/c/Program\ Files\ \(x86\)/GnuPG/bin/gpgsm.exe"
-      alias gpgtar="/mnt/c/Program\ Files\ \(x86\)/GnuPG/bin/gpgtar.exe"
-      alias gpgv="/mnt/c/Program\ Files\ \(x86\)/GnuPG/bin/gpgv.exe"
+      # The single quotes end up inside the alias value so the space- and
+      # paren-containing path stays one word when the alias expands.
+      alias gpg="'${gpg4win}/gpg.exe'"
+      alias gpg-agent="'${gpg4win}/gpg-agent.exe'"
+      alias gpg-connect-agent="'${gpg4win}/gpg-connect-agent.exe'"
+      alias gpg-wks-client="'${gpg4win}/gpg-wks-client.exe'"
+      alias gpgconf="'${gpg4win}/gpgconf.exe'"
+      alias gpgsm="'${gpg4win}/gpgsm.exe'"
+      alias gpgtar="'${gpg4win}/gpgtar.exe'"
+      alias gpgv="'${gpg4win}/gpgv.exe'"
 
     fi
 
