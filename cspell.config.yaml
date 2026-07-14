@@ -3,6 +3,7 @@
 # scripts/cspell/import-vscode-words.py (dedupes + sorts on every run).
 version: "0.2"
 words:
+  - analyzeduration
   - apikey
   - argcomplete
   - autojunk
@@ -13,8 +14,11 @@ words:
   - clearsign
   - CLIENTID
   - CLIENTSECRET
+  - compgen
   - compopt
   - COMPREPLY
+  - CREAT
+  - CWORD
   - dircolors
   - docstrings
   - dotfile
@@ -24,11 +28,13 @@ words:
   - endfor
   - endmacro
   - erasedups
+  - esac
   - executiontime
   - Fantasque
   - ffprobe
   - fgrep
   - foxundermoon
+  - fullwidth
   - Gitschooldude
   - gpgconf
   - gpgparsemail
@@ -40,11 +46,15 @@ words:
   - histappend
   - homelab
   - ignoreboth
+  - ignoredups
+  - ignorespace
   - isalpha
   - isdigit
   - jnoortheen
   - Kalam
+  - Kbps
   - kddejong
+  - keepends
   - Kleopatra
   - lesspipe
   - libpam
@@ -52,8 +62,13 @@ words:
   - linecap
   - linejoin
   - lrwxrwxrwx
+  - mapfile
+  - Mbps
   - mktemp
+  - mkvmerge
   - mkvtoolnix
+  - Muxer
+  - muxing
   - nbsp
   - nerdfonts
   - newermt
@@ -68,6 +83,7 @@ words:
   - pdfs
   - pipefail
   - pkgs
+  - probesize
   - pssst
   - pycache
   - pypdf
@@ -85,10 +101,12 @@ words:
   - svgns
   - timonwong
   - toplevel
+  - ufeff
   - usbipd
   - vdir
   - venv
   - WeasyPrint
+  - WRONLY
   - wslpath
   - xmldecl
   - yubikey
