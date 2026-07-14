@@ -162,9 +162,7 @@
   # Shell aliases (home-manager / tooling specific)
   # ---------------------------------------------------------------------------
   programs.bash.shellAliases = {
-    # Better defaults (packages installed above)
-    cat = "bat";
-    ls = "eza --git";
+    # NOTE: `cat` (bat) and `ls` (eza) aliases live in ./modules/bash/aliases.nix.
 
     # Home Manager workflow
     hms = "home-manager switch && exec $SHELL -l";

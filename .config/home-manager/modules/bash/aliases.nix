@@ -1,11 +1,19 @@
 # Common shell aliases and colour support for ls/grep.
-#
-# NOTE: `ls` and `cat` are intentionally omitted here — home.nix overrides
-# them with eza and bat respectively.
-{ ... }:
+{ pkgs, ... }:
 {
+  # Modern replacements backing the `cat`/`ls` aliases below.
+  # (Also listed in home.nix; home.packages entries merge and dedupe.)
+  home.packages = with pkgs; [
+    bat
+    eza
+  ];
+
   programs.bash = {
     shellAliases = {
+      # Better defaults (packages installed above)
+      cat = "bat";
+      ls = "eza --git";
+
       ll = "ls -alF";
       la = "ls -A";
       l = "ls -CF";
