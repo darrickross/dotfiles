@@ -10,6 +10,12 @@
     helper = !gh auth git-credential
 [gpg]
     format = openpgp
+[filter "tabs2spaces"]
+    # Convert leading tabs to 4 spaces when staging files. Applied per-path
+    # via .gitattributes (filter=tabs2spaces). --initial leaves embedded
+    # tabs (string literals, TSV data) untouched. No smudge filter, so
+    # checkouts are untouched and there is no per-file process overhead.
+    clean = expand --initial --tabs=4
 [commit]
     gpgSign = true
 [include]
