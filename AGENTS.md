@@ -15,11 +15,13 @@ The directory structure of this repo mirrors `~` exactly (`.config/`, `.ssh/`, e
 
 ## Home Manager — source of truth for scripts, aliases, and packages
 
-All shell scripts, aliases, and installed packages are managed in [`.config/home-manager/home.nix`](.config/home-manager/home.nix). Do not install packages with `nix-env`, `pip`, `apt`, or any other package manager.
+All shell scripts, aliases, and installed packages are managed declaratively under [`.config/home-manager/`](.config/home-manager/). Do not install packages with `nix-env`, `pip`, `apt`, or any other package manager.
 
-- To add a package: add it to the `home.packages` list in `home.nix`
-- To add a script or alias: add a `home.file` or `programs.bash.shellAliases` entry in `home.nix`
-- After any change to `home.nix`: run `hms` (`home-manager switch && exec $SHELL -l`) to apply it
+Each module declares the packages, scripts, and aliases **it** needs, next to the code that needs them — even when that overlaps with another module. `home.packages` lists from all modules are merged and identical packages dedupe to the same store path, so declaring `jq` in both `home.nix` and `modules/secrets.nix` is correct, not a conflict. Do not "clean up" a dependency out of a module because another module happens to also declare it — that couples the modules invisibly.
+
+- To add a package: add it to `home.packages` in the module that uses it — general-purpose tools in `home.nix`, secrets tooling in `modules/secrets.nix`, WSL-specific pieces in `modules/wsl.nix`
+- To add a script or alias: add a `home.file` or `programs.bash.shellAliases` entry in the module it belongs to (general-purpose scripts live in `home.nix`)
+- After any change to the nix config: run `hms` (`home-manager switch && exec $SHELL -l`) to apply it
 - To update flake inputs (nixpkgs, home-manager): run `hmu` (`nix flake update`)
 - Python packages are pinned in `home.nix` — add new dependencies there, not with `pip install`
 
@@ -33,6 +35,7 @@ This machine runs Linux under WSL2. Several tools forward to Windows binaries to
 - **age-plugin-yubikey** — `~/.local/bin/age-plugin-yubikey` is a wrapper that calls the Windows `.exe`; do not replace it with a Linux binary or the YubiKey age identity will stop working
 - **SSH SK helper** — `SSH_SK_HELPER` points to `/mnt/c/Program Files/OpenSSH/ssh-sk-helper.exe`
 - YubiKey USB is **not** forwarded to WSL via usbipd; all YubiKey operations must go through these Windows wrappers
+- `modules/wsl.nix` refuses to activate off WSL2: an activation-time check aborts `home-manager switch` before writing anything. When porting this config to a non-WSL machine, remove `./modules/wsl.nix` from the imports in `home.nix`
 
 ---
 
@@ -158,11 +161,11 @@ Example of a correctly formatted table:
 
 ## Available commands (after home-manager switch)
 
-| Command                               | What it does                                                                                                        |
-| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `bws-load-local-machine-credential`   | Sources `_bws-load-local-machine-credential`, decrypts and exports `BWS_ACCESS_TOKEN`                               |
-| `bws-check-available-secrets`         | Lists UUID and Key of every secret the machine account can access                                                   |
-| `bws run -- <cmd>`                    | Runs `<cmd>` with all BWS secrets injected as environment variables                                                 |
-| `bw_sync_encrypted_secrets.sh`        | Fetches the BWS token from Bitwarden vault and writes it encrypted to `~/.local/secrets/bitwarden.yaml`             |
-| `sops-load-yubikey-recipient`         | Reads the age recipient from YubiKey slot 1 into the repo's `.config/sops/.sops.yaml` (run from inside the clone)   |
-| `dotfiles-root`                       | Prints the live clone's root, resolved backwards from the `~/.config/home-manager` symlink — never hardcode paths   |
+| Command                             | What it does                                                                                                              |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `bws-load-local-machine-credential` | Sources `_bws-load-local-machine-credential`, decrypts and exports `BWS_ACCESS_TOKEN`                                     |
+| `bws-check-available-secrets`       | Lists UUID and Key of every secret the machine account can access                                                         |
+| `bws run -- <cmd>`                  | Runs `<cmd>` with all BWS secrets injected as environment variables                                                       |
+| `bw_sync_encrypted_secrets.sh`      | Fetches the BWS token from Bitwarden vault and writes it encrypted to `~/.local/secrets/bitwarden.yaml`                   |
+| `sops-load-yubikey-recipient`       | Reads the age recipient from YubiKey slot 1 into the repo's `.config/sops/.sops.yaml` (locates clone via `dotfiles-root`) |
+| `dotfiles-root`                     | Prints the live clone's root, resolved backwards from the `~/.config/home-manager` symlink — never hardcode paths         |
