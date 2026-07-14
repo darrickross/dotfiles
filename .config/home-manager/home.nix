@@ -33,6 +33,7 @@
     # in ./modules/secrets.nix next to the scripts that require it.
     ansible-lint
     bat
+    cspell # vscode plugin: streetsidesoftware.code-spell-checker; scripts/checks/spelling.py
     eza
     ffmpeg # ffprobe used by rename-media.py
     # fnm # Fast Node Manager - (VS Code plugin workflow)
@@ -174,6 +175,11 @@
     # scripts. Run after editing any .nix file, before 'hms'.
     dotfiles-check = ''python3 "$(dotfiles-root)/scripts/checks/check.py"'';
 
+    # Spelling: list unknown words (cspell) / migrate VS Code cSpell.words
+    # into cspell configs (see each script's --help).
+    spell-check = ''python3 "$(dotfiles-root)/scripts/checks/spelling.py"'';
+    cspell-import = ''python3 "$(dotfiles-root)/scripts/cspell/import-vscode-words.py"'';
+
     rename-media = ''python3 "$(dotfiles-root)/scripts/video/rename-media.py"'';
     mkv-info = ''python3 "$(dotfiles-root)/scripts/video/mkv-info.py"'';
     mkv-scan = ''python3 "$(dotfiles-root)/scripts/video/mkv-scan.py"'';
@@ -196,6 +202,28 @@
       [[ $? == 0 && $SUPPRESS_SPACE == 1 ]] && compopt -o nospace
     }
     complete -o nospace -o default -F _wifi_qr_complete wifi-qr
+
+    # Tab-completion for cspell-import (scripts/cspell/import-vscode-words.py):
+    # flags, plus Windows usernames from /mnt/c/Users after
+    # --update-global-user-list (skipping non-user entries and names with
+    # spaces, which COMPREPLY word splitting would mangle).
+    _cspell_import_complete() {
+      local cur="''${COMP_WORDS[COMP_CWORD]}"
+      local prev="''${COMP_WORDS[COMP_CWORD - 1]}"
+      if [[ "$prev" == "--update-global-user-list" ]]; then
+        local dir user users=()
+        for dir in /mnt/c/Users/*/; do
+          user="''${dir%/}"
+          user="''${user##*/}"
+          [[ "$user" == *" "* || "$user" == "Default" || "$user" == "Public" ]] && continue
+          users+=("$user")
+        done
+        mapfile -t COMPREPLY < <(compgen -W "''${users[*]}" -- "$cur")
+        return
+      fi
+      mapfile -t COMPREPLY < <(compgen -W "--update-global-user-list --copy-and-delete --dry-run --help" -- "$cur")
+    }
+    complete -F _cspell_import_complete cspell-import
 
     # Warn when any .nix file in the home-manager config is newer than the
     # last `home-manager switch`, so you don't forget to apply changes.

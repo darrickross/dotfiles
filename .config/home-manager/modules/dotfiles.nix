@@ -44,6 +44,15 @@
       force = true;
     };
 
+    # Global cspell word list — the only global config path the cspell CLI
+    # reads (cspell.json specifically; YAML variants are ignored there).
+    # Update it from the Windows VS Code user settings with
+    # scripts/cspell/import-vscode-words.py --update-global-user-list <user>.
+    ".config/cspell/cspell.json" = {
+      source = ../../cspell/cspell.json;
+      force = true;
+    };
+
     # oh-my-posh prompt theme, read by modules/bash/prompt.nix.
     ".config/ohmyposh/bash_prompt.toml" = {
       source = ../../ohmyposh/bash_prompt.toml;
