@@ -63,10 +63,10 @@ in
 
   home.file = {
     # Loads the age recipient from YubiKey slot 1 into the repo's
-    # .config/sops/.sops.yaml. Finds the repo from the current working
-    # directory (git rev-parse) so the clone location is never hardcoded —
-    # run it from anywhere inside the dotfiles clone, then run 'hms' to
-    # deploy the updated file to ~/.config/sops/.sops.yaml.
+    # .config/sops/.sops.yaml. The live clone is resolved with
+    # dotfiles-root (deployed by home.nix) so this runs from any
+    # directory and the clone location is never hardcoded; afterwards
+    # run 'hms' to deploy the updated file to ~/.config/sops/.sops.yaml.
     ".local/bin/sops-load-yubikey-recipient" = {
       executable = true;
       force = true;
@@ -74,11 +74,9 @@ in
         #!/usr/bin/env bash
         set -euo pipefail
 
-        REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null) || {
-          echo "Error: not inside a git repository." >&2
-          echo "  cd into your dotfiles clone and re-run." >&2
-          exit 1
-        }
+        # dotfiles-root prints its own actionable error if the
+        # ~/.config/home-manager symlink is missing or broken.
+        REPO_ROOT=$(dotfiles-root)
 
         SOPS_FILE="$REPO_ROOT/.config/sops/.sops.yaml"
         if [[ ! -f "$SOPS_FILE" ]]; then
