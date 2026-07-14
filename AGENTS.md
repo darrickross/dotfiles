@@ -131,6 +131,8 @@ All text files use LF line endings — enforced by `.gitattributes`. When creati
 
 ### Tables
 
+These rules apply to any Markdown table written for humans to read: `.md` files, and tables embedded in code documentation (Python docstrings, heredocs, script `--help` text, code comments). They can safely be skipped in agent-owned files — `AGENTS.md`, `CLAUDE.md`, agent memory/scratch files, and similar — where only agents are the audience.
+
 - Align column separator pipes so all rows in a column have the same width — pad with spaces
 - The separator row (dashes) must match the width of the widest cell in each column
 - Always include a space inside each cell: `| cell |` not `|cell|`
@@ -142,6 +144,14 @@ Example of a correctly formatted table:
 | ------- | ---------------------- |
 | value   | another value          |
 | x       | y                      |
+```
+
+`scripts/markdown/fix-tables.py` automates this — write the table without worrying about padding, then run it. It preserves GFM alignment markers, skips tables inside fenced code blocks, and handles wide (CJK) characters:
+
+```bash
+scripts/markdown/fix-tables.py README.md docs/*.md   # rewrite files in place
+scripts/markdown/fix-tables.py --check --diff *.md   # report + diff, don't write
+cat notes.md | scripts/markdown/fix-tables.py        # stdin -> stdout (for heredoc/docstring content)
 ```
 
 ---
