@@ -48,6 +48,7 @@
       py.black # vscode plugin: ms-python.black-formatter
       py.cfn-lint # vscode plugin: kddejong.vscode-cfn-lint
       py.argcomplete # dotfiles/scripts/qr-codes/generate.py
+      py.cryptography # dotfiles/scripts/certificates/convert-pfx.py
       py.jinja2 # dotfiles/scripts/qr-codes/generate.py
       py.pillow # dotfiles/scripts/pdf/convert_tif_jpg_to_pdf.py
       py.pypdf # dotfiles/scripts/pdf/<multiple>
@@ -179,6 +180,10 @@
     # into cspell configs (see each script's --help).
     spell-check = ''python3 "$(dotfiles-root)/scripts/checks/spelling.py"'';
     cspell-import = ''python3 "$(dotfiles-root)/scripts/cspell/import-vscode-words.py"'';
+
+    # PKCS#12: extract keys/certs from a .pfx bundle (see --help; password
+    # via --password-stdin or an interactive no-echo prompt, never argv/env).
+    convert-pfx = ''python3 "$(dotfiles-root)/scripts/certificates/convert-pfx.py"'';
 
     rename-media = ''python3 "$(dotfiles-root)/scripts/video/rename-media.py"'';
     mkv-info = ''python3 "$(dotfiles-root)/scripts/video/mkv-info.py"'';
