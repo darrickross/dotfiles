@@ -1,4 +1,4 @@
-# Shell prompt: oh-my-posh when available, minimal colour PS1 as fallback.
+# Shell prompt: oh-my-posh when available, minimal color PS1 as fallback.
 { ... }:
 {
   programs.bash.initExtra = ''

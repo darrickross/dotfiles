@@ -1,4 +1,4 @@
-# Common shell aliases and colour support for ls/grep.
+# Common shell aliases and color support for ls/grep.
 { pkgs, ... }:
 {
   # Modern replacements backing the `cat`/`ls` aliases below.
@@ -32,7 +32,7 @@
         builtin cd "$@" && ls -al
       }
 
-      # Enable colour output for grep family (ls colour is handled by eza alias).
+      # Enable color output for grep family (ls color is handled by eza alias).
       if [ -x /usr/bin/dircolors ]; then
         test -r ~/.dircolors \
           && eval "$(dircolors -b ~/.dircolors)" \
