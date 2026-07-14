@@ -1,5 +1,5 @@
 # Secrets tooling: Bitwarden vault -> sops+age(YubiKey) encrypted local file
-# -> BWS access token -> application secrets via `bws run`.
+# -> BWS access token -> application secrets via `cbws-exec` (wraps `bws run`).
 # See AGENTS.md "Secrets architecture" for the full two-layer design.
 #
 # Everything the workflow needs lives in this module: the packages the
@@ -16,7 +16,7 @@
 { config, pkgs, ... }:
 let
   # Name of the Bitwarden *vault* item (personal vault, not Secrets Manager)
-  # that bw_sync_encrypted_secrets.sh fetches. It must be a Secure Note whose
+  # that cbws-sync-encrypted-secrets fetches. It must be a Secure Note whose
   # Notes field contains the YAML documented in README.md ("local-machine-
   # bws-secrets Secure Note" section), including the BWS access token.
   #
@@ -41,7 +41,7 @@ in
   ];
 
   home.packages = with pkgs; [
-    bitwarden-cli # `bw` — vault access in bw_sync_encrypted_secrets.sh
+    bitwarden-cli # `bw` — vault access in cbws-sync-encrypted-secrets
     bws # Bitwarden Secrets Manager CLI, authenticated via BWS_ACCESS_TOKEN
     jq # JSON parsing in the scripts below (also a general-purpose tool)
     sops # encrypt/decrypt the local secrets file
@@ -58,7 +58,7 @@ in
 
   programs.bash.shellAliases = {
     # Must be sourced so the exported token reaches the calling shell.
-    bws-load-local-machine-credential = "source $HOME/.local/bin/_bws-load-local-machine-credential";
+    cbws-load-local-machine-credential = "source $HOME/.local/bin/_cbws-load-local-machine-credential";
   };
 
   home.file = {
@@ -111,7 +111,7 @@ in
     # Must be *sourced* (not executed) so that `export BWS_ACCESS_TOKEN`
     # reaches the calling shell.  The underscore prefix signals this.
     # No `set -euo pipefail` — it would leak into the calling shell (AGENTS.md).
-    ".local/bin/_bws-load-local-machine-credential" = {
+    ".local/bin/_cbws-load-local-machine-credential" = {
       executable = true;
       force = true;
       text = ''
@@ -120,7 +120,7 @@ in
         # Refuse to run as a subprocess — exports would be lost on exit.
         if [[ "''${BASH_SOURCE[0]}" == "''${0}" ]]; then
           echo "Error: this script must be sourced, not executed." >&2
-          echo "  Run:  bws-load-local-machine-credential" >&2
+          echo "  Run:  cbws-load-local-machine-credential" >&2
           exit 1
         fi
 
@@ -141,7 +141,7 @@ in
         fi
         if [[ ! -f "$SECRETS_FILE" ]]; then
           echo "Error: secrets file not found at $SECRETS_FILE" >&2
-          echo "  Run bw_sync_encrypted_secrets.sh to create it." >&2
+          echo "  Run cbws-sync-encrypted-secrets to create it." >&2
           return 1
         fi
 
@@ -156,29 +156,178 @@ in
       '';
     };
 
-    # Lists all secrets available in the BWS project (requires BWS_ACCESS_TOKEN).
-    ".local/bin/bws-check-available-secrets" = {
+    # Primary way to run a command with BWS secrets. Decrypts the access
+    # token (one YubiKey PIN + touch), then execs `bws run` scoped to a
+    # project — each secret's Key becomes an environment variable in the
+    # command's process tree, and the token dies with that process. The
+    # token is never exported into the calling shell; source
+    # cbws-load-local-machine-credential only when the token itself is
+    # needed in the shell (e.g. `bws secret create`).
+    ".local/bin/cbws-exec" = {
       executable = true;
       force = true;
       text = ''
         #!/usr/bin/env bash
         set -euo pipefail
 
-        if [[ -z "''${BWS_ACCESS_TOKEN:-}" ]]; then
-          echo "Error: BWS_ACCESS_TOKEN is not set." >&2
-          echo "  Run:  bws-load-local-machine-credential" >&2
+        usage() {
+          echo "Usage: cbws-exec [--project-id <UUID>] [--] <command> [args...]"
+          echo ""
+          echo "Runs <command> with BWS secrets injected as environment variables"
+          echo "(each secret's Key becomes a variable name). Decrypting the access"
+          echo "token costs one YubiKey PIN + touch; the token exists only for the"
+          echo "lifetime of <command> and never enters the calling shell."
+          echo ""
+          echo "Options:"
+          echo "  --project-id <UUID>  Inject secrets from this BWS project instead"
+          echo "                       of the default_project_id stored in the"
+          echo "                       encrypted secrets file."
+          echo ""
+          echo "Example:"
+          echo "  cbws-exec -- ./my-script-here   # script reads secrets from env vars"
+        }
+
+        PROJECT_ID=""
+        while [[ $# -gt 0 ]]; do
+          case "$1" in
+            --project-id)
+              if [[ $# -lt 2 ]]; then
+                echo "Error: --project-id requires a value." >&2
+                exit 1
+              fi
+              PROJECT_ID="$2"
+              shift 2
+              ;;
+            -h | --help)
+              usage
+              exit 0
+              ;;
+            --)
+              shift
+              break
+              ;;
+            -*)
+              echo "Error: unknown option: $1" >&2
+              usage >&2
+              exit 1
+              ;;
+            *)
+              break
+              ;;
+          esac
+        done
+
+        if [[ $# -eq 0 ]]; then
+          echo "Error: no command given." >&2
+          usage >&2
           exit 1
+        fi
+
+        SECRETS_FILE="$HOME/.local/secrets/bitwarden.yaml"
+
+        # Preflight: same actionable checks as _cbws-load-local-machine-credential.
+        if ! command -v age-plugin-yubikey >/dev/null 2>&1; then
+          echo "Error: age-plugin-yubikey not found on PATH." >&2
+          echo "  On WSL it is deployed by modules/wsl.nix — run 'hms'." >&2
+          exit 1
+        fi
+        if [[ ! -f "''${SOPS_AGE_KEY_FILE:-}" ]]; then
+          echo "Error: age identity file not found at ''${SOPS_AGE_KEY_FILE:-<SOPS_AGE_KEY_FILE unset>}" >&2
+          echo "  Generate it:  age-plugin-yubikey --identity --slot 1 > ~/.config/age/yubikey-identity.txt" >&2
+          exit 1
+        fi
+        if [[ ! -f "$SECRETS_FILE" ]]; then
+          echo "Error: secrets file not found at $SECRETS_FILE" >&2
+          echo "  Run cbws-sync-encrypted-secrets to create it." >&2
+          exit 1
+        fi
+
+        # Decrypt the whole file once — the YubiKey PIN/touch policy is
+        # "Always", so per-key --extract calls would each cost a touch.
+        # The plaintext only ever lives in this process's memory.
+        SECRETS_YAML=$(sops --decrypt "$SECRETS_FILE") || {
+          echo "Error: failed to decrypt $SECRETS_FILE" >&2
+          exit 1
+        }
+
+        # printf | yq (not a herestring) so the plaintext never risks
+        # touching a temp file on bash versions that back herestrings
+        # with one.
+        BWS_ACCESS_TOKEN=$(printf '%s\n' "$SECRETS_YAML" \
+          | yq '.local_computer_machine_account_bws_access_token // ""' -)
+        if [[ -z "$BWS_ACCESS_TOKEN" ]]; then
+          echo "Error: local_computer_machine_account_bws_access_token is missing or empty in $SECRETS_FILE" >&2
+          exit 1
+        fi
+
+        if [[ -z "$PROJECT_ID" ]]; then
+          PROJECT_ID=$(printf '%s\n' "$SECRETS_YAML" | yq '.default_project_id // ""' -)
+        fi
+        if [[ -z "$PROJECT_ID" ]]; then
+          echo "Error: no project id available." >&2
+          echo "  Add default_project_id to the '${bitwardenVaultItem}' Secure Note and" >&2
+          echo "  re-run cbws-sync-encrypted-secrets, or pass --project-id <UUID>." >&2
+          exit 1
+        fi
+
+        # exec: the token is in the environment of `bws run` and its
+        # children only; it vanishes when the command exits.
+        BWS_ACCESS_TOKEN="$BWS_ACCESS_TOKEN" exec bws run --project-id "$PROJECT_ID" -- "$@"
+      '';
+    };
+
+    # Lists all secrets the machine account can access. Self-contained:
+    # runs as a subprocess, decrypts the token itself (one YubiKey
+    # PIN + touch), lists the secrets, and exits — the token dies with
+    # this process and never enters the calling shell. Reuses
+    # BWS_ACCESS_TOKEN if it is already in the environment (e.g. after
+    # cbws-load-local-machine-credential) to skip the decrypt.
+    ".local/bin/cbws-list-available-secrets" = {
+      executable = true;
+      force = true;
+      text = ''
+        #!/usr/bin/env bash
+        set -euo pipefail
+
+        SECRETS_FILE="$HOME/.local/secrets/bitwarden.yaml"
+
+        BWS_ACCESS_TOKEN="''${BWS_ACCESS_TOKEN:-}"
+        if [[ -z "$BWS_ACCESS_TOKEN" ]]; then
+          # Preflight: same actionable checks as _cbws-load-local-machine-credential.
+          if ! command -v age-plugin-yubikey >/dev/null 2>&1; then
+            echo "Error: age-plugin-yubikey not found on PATH." >&2
+            echo "  On WSL it is deployed by modules/wsl.nix — run 'hms'." >&2
+            exit 1
+          fi
+          if [[ ! -f "''${SOPS_AGE_KEY_FILE:-}" ]]; then
+            echo "Error: age identity file not found at ''${SOPS_AGE_KEY_FILE:-<SOPS_AGE_KEY_FILE unset>}" >&2
+            echo "  Generate it:  age-plugin-yubikey --identity --slot 1 > ~/.config/age/yubikey-identity.txt" >&2
+            exit 1
+          fi
+          if [[ ! -f "$SECRETS_FILE" ]]; then
+            echo "Error: secrets file not found at $SECRETS_FILE" >&2
+            echo "  Run cbws-sync-encrypted-secrets to create it." >&2
+            exit 1
+          fi
+
+          echo "Decrypting $SECRETS_FILE — confirm with your YubiKey PIN + touch." >&2
+          BWS_ACCESS_TOKEN=$(
+            sops --decrypt --extract '["local_computer_machine_account_bws_access_token"]' \
+              "$SECRETS_FILE"
+          ) || { echo "Error: failed to decrypt $SECRETS_FILE" >&2; exit 1; }
+          [[ -n "$BWS_ACCESS_TOKEN" ]] || { echo "Error: decrypted token is empty" >&2; exit 1; }
         fi
 
         echo "             Secret UUID             | Key"
 
-        bws secret list --output json | jq -r '.[] | "\(.id) | \(.key)"'
+        BWS_ACCESS_TOKEN="$BWS_ACCESS_TOKEN" bws secret list --output json \
+          | jq -r '.[] | "\(.id) | \(.key)"'
       '';
     };
 
     # Sync secrets from Bitwarden and re-encrypt locally with YubiKey.
     # Run on first setup or after rotating tokens.
-    ".local/bin/bw_sync_encrypted_secrets.sh" = {
+    ".local/bin/cbws-sync-encrypted-secrets" = {
       executable = true;
       force = true;
       text = ''

@@ -123,8 +123,9 @@ Verify that Home Manager applied the configuration correctly by checking that ma
 home-manager generations
 
 # Confirm managed scripts are on PATH
-which bws-check-available-secrets
-which bw_sync_encrypted_secrets.sh
+which cbws-exec
+which cbws-list-available-secrets
+which cbws-sync-encrypted-secrets
 
 # Confirm the repo clone resolves from the symlink made in step 3
 dotfiles-root
@@ -324,40 +325,50 @@ These steps are safe to run at any time. Make sure the YubiKey is available on t
 
 ## Bitwarden Setup
 
+### Design rationale — one machine account, one project
+
+The primary reason for this setup is to reduce the number of BWS projects and machine accounts: the Bitwarden Secrets Manager **free tier allows only 3 projects and 3 machine accounts**, which is too few to scope a project per workload. The accepted risk is a single machine account whose token reads a single project of co-mingled secrets — any command run through `cbws-exec` receives every secret in the default project.
+
+The compensating controls are on the token's *lifetime* rather than its scope: it only ever exists (1) encrypted on disk under a YubiKey-backed age key, and (2) in the environment of the one process tree started by `cbws-exec`. It is never exported into an interactive shell except via the explicit fallback (`cbws-load-local-machine-credential`).
+
 ### `local-machine-bws-secrets` Secure Note
 
-The `bw_sync_encrypted_secrets.sh` script fetches a Bitwarden Secure Note named **`local-machine-bws-secrets`** from your primary Bitwarden account. The Notes field must contain valid YAML in the following format:
+The `cbws-sync-encrypted-secrets` script fetches a Bitwarden Secure Note named **`local-machine-bws-secrets`** from your primary Bitwarden account. The Notes field must contain valid YAML in the following format:
 
 ```yaml
 local_computer_machine_account_bws_access_token: "your-bws-access-token"
+default_project_id: "your-default-project-id"
 ```
 
-The BWS access token comes from the Bitwarden Secrets Manager web app under the machine account for this computer.
+The BWS access token comes from the Bitwarden Secrets Manager web app under the machine account for this computer. `default_project_id` is the UUID of the BWS project whose secrets `cbws-exec` injects when `--project-id` is not given — find it in the Secrets Manager web app under **Projects**.
 
 > [!NOTE]
-> Run `bw_sync_encrypted_secrets.sh` on first setup, or any time the BWS access token is rotated. It encrypts the token locally with your YubiKey so it never sits on disk in plaintext.
+> Run `cbws-sync-encrypted-secrets` on first setup, or any time the BWS access token is rotated. It encrypts the token locally with your YubiKey so it never sits on disk in plaintext.
 
 ---
 
 ### Daily Workflow
 
-#### 1. Load the BWS token into your shell
+#### 1. Run a command with secrets injected — `cbws-exec` (primary)
 
-Before using any `bws` commands, load the token from the encrypted local file:
+`cbws-exec` is the default way to use secrets. It decrypts the BWS access token with your YubiKey (one PIN + touch), then runs your command via `bws run` scoped to `default_project_id` — each secret's **Key** becomes an environment variable in the command's process tree:
 
 ```bash
-bws-load-local-machine-credential
+cbws-exec -- ./my-script-here               # script reads secrets from env vars
+cbws-exec --project-id <UUID> -- ./deploy.sh # override the default project
 ```
 
-This decrypts `~/.local/secrets/bitwarden.yaml` with your YubiKey and exports `BWS_ACCESS_TOKEN` into the current shell session. The token is not persisted anywhere else.
+Write your scripts to assume the secrets are already present as environment variables. The token and the secrets exist only for the lifetime of the command: nothing is exported into your interactive shell, and nothing touches disk or shell history. Each invocation costs one YubiKey touch, which is the point — decryption always requires physical presence.
 
 #### 2. List available secrets
 
 To see what secrets the machine account has access to:
 
 ```bash
-bws-check-available-secrets
+cbws-list-available-secrets
 ```
+
+This is self-contained: it prompts for your YubiKey PIN + touch to decrypt the access token, lists the secrets, and exits — the token lives only inside that subprocess and never enters your shell. (If `BWS_ACCESS_TOKEN` is already loaded in your shell, it reuses it and skips the decrypt.)
 
 Output shows the UUID and key name of every secret:
 
@@ -369,30 +380,28 @@ xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx | DATABASE_PASSWORD
 
 The **Key** column is what you use as the environment variable name in your commands.
 
-#### 3. Inject secrets into a command with `bws run`
+#### 3. Load the BWS token into your shell (fallback)
 
-`bws run` fetches all secrets the machine account can access, sets each one as an environment variable named after its **Key**, and then runs the command:
-
-```bash
-bws run -- <COMMAND>
-```
-
-Example — print a secret value:
+Only needed when the token itself must be in your shell — `bws secret create` or other ad-hoc `bws` calls:
 
 ```bash
-bws run -- printenv MY_API_KEY
+cbws-load-local-machine-credential
 ```
 
-Example — pass a secret to a script without it ever touching your shell history:
+This decrypts `~/.local/secrets/bitwarden.yaml` with your YubiKey and exports `BWS_ACCESS_TOKEN` into the current shell session. The token is not persisted anywhere else, but note that every child process started from that shell inherits it for the rest of the session — prefer `cbws-exec` whenever possible.
+
+#### 4. `bws run` directly (what `cbws-exec` wraps)
+
+With `BWS_ACCESS_TOKEN` loaded into the shell (step 3), `bws run` fetches the secrets the machine account can access, sets each one as an environment variable named after its **Key**, and then runs the command:
 
 ```bash
-bws run -- ./deploy.sh
+bws run --project-id <UUID> -- printenv MY_API_KEY
 ```
 
-The command has access to every secret as a plain environment variable. The values are never written to disk and are not visible in your shell's history.
+This is exactly what `cbws-exec` does under the hood — direct use is only worthwhile when the token is already loaded for other work.
 
 > [!IMPORTANT]
-> `bws run` is always a subprocess — it cannot modify your current shell session. Use `bws-load-local-machine-credential` when you need `BWS_ACCESS_TOKEN` itself in the current shell.
+> `bws run` is always a subprocess — it cannot modify your current shell session. Use `cbws-load-local-machine-credential` when you need `BWS_ACCESS_TOKEN` itself in the current shell.
 
 ---
 
