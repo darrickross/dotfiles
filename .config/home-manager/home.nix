@@ -17,7 +17,7 @@
   # This value determines the Home Manager release that your configuration is
   # compatible with. Do not change it even when updating Home Manager — check
   # the release notes first.
-  home.stateVersion = "25.05";
+  home.stateVersion = "26.05";
 
   # ---------------------------------------------------------------------------
   # Packages
