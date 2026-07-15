@@ -53,8 +53,8 @@ The Bitwarden Secrets Manager (BWS) access token is the credential that unlocks 
 
 - Stored encrypted at `~/.local/secrets/bitwarden.yaml` using sops + age + YubiKey, alongside `default_project_id` (the BWS project `cbws-exec` scopes to by default)
 - Encrypted under the age recipient in `.config/sops/.sops.yaml` (a YubiKey-backed key, slot 1); home-manager places a copy at `~/.config/sops/.sops.yaml`, which is what scripts pass to `sops --config`
-- Consumed primarily by `cbws-exec`, which decrypts it, runs `bws run` in a child process, and lets the token die with that process — the token never enters the interactive shell
-- Only when the token itself is needed in the shell (e.g. `bws secret create`, ad-hoc `bws` calls): source `cbws-load-local-machine-credential` (alias), which decrypts the file with sops and exports `BWS_ACCESS_TOKEN` into the current shell session only
+- Consumed only by `cbws-exec` and `cbws-list-available-secrets`, which decrypt it, use it in a child process, and let it die with that process — the token never enters the interactive shell. There is deliberately no command that exports `BWS_ACCESS_TOKEN` into the shell; do not add one
+- **Read-only from this machine**: the CLI workflow only reads secrets. Creating, editing, or deleting secrets is done in the Bitwarden Secrets Manager web UI
 
 The file `~/.local/secrets/bitwarden.yaml` is in `.gitignore` and must never be committed. It is re-created by running `cbws-sync-encrypted-secrets`.
 
@@ -63,17 +63,12 @@ The file `~/.local/secrets/bitwarden.yaml` is in `.gitignore` and must never be 
 All application secrets live in Bitwarden Secrets Manager (BWS). They are never written to disk. Access pattern:
 
 ```bash
-# Primary: one YubiKey PIN + touch per invocation, token never enters the shell
+# One YubiKey PIN + touch per invocation, token never enters the shell
 cbws-exec -- <command>                       # scoped to default_project_id
 cbws-exec --project-id <UUID> -- <command>   # override the project
-
-# Fallback — only when the token itself must be in the shell
-# (bws secret create, ad-hoc bws calls):
-cbws-load-local-machine-credential
-bws run --project-id <UUID> -- <command>
 ```
 
-`bws run` (which `cbws-exec` wraps) sets each secret as an environment variable named after its **Key** field in BWS, then execs the command — write scripts to read their secrets from those environment variables. The values are never written to disk and do not appear in shell history. Prefer `cbws-exec` in scripts and documentation: exporting `BWS_ACCESS_TOKEN` into an interactive shell hands it to every subsequent child process for the life of the session.
+`bws run` (which `cbws-exec` wraps) sets each secret as an environment variable named after its **Key** field in BWS, then execs the command — write scripts to read their secrets from those environment variables. The values are never written to disk and do not appear in shell history. Direct `bws` calls are not part of the workflow: nothing exports `BWS_ACCESS_TOKEN` into an interactive shell (that would hand it to every subsequent child process for the life of the session), and secrets are created or edited in the web UI, not the CLI.
 
 ---
 
@@ -88,7 +83,7 @@ bws run --project-id <UUID> -- <command>
 
 ### Sourced scripts
 
-Any script that must `export` variables into the calling shell must be sourced, not executed. Follow the pattern in `_cbws-load-local-machine-credential`:
+No sourced scripts currently exist (the former `_cbws-load-local-machine-credential` was removed — nothing may export `BWS_ACCESS_TOKEN` into the shell). If a script must ever `export` variables into the calling shell again, it must be sourced, not executed, and follow this pattern:
 
 1. Prefix the filename with `_` to signal it is not called directly
 2. Guard against direct execution with a `BASH_SOURCE[0] == $0` check that uses `exit 1` (not `return 1`) so the error is clear when run as a subprocess
@@ -179,13 +174,11 @@ cat notes.md | scripts/markdown/fix-tables.py        # stdin -> stdout (for here
 
 ## Available commands (after home-manager switch)
 
-| Command                              | What it does                                                                                                                                                |
-| ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `cbws-exec -- <cmd>`                 | Primary secrets entrypoint: decrypts the token, runs `<cmd>` via `bws run` scoped to `default_project_id` (or `--project-id`); token dies with the process  |
-| `cbws-load-local-machine-credential` | Sources `_cbws-load-local-machine-credential`, decrypts and exports `BWS_ACCESS_TOKEN` (only when the token itself is needed)                               |
-| `cbws-list-available-secrets`       | Lists UUID and Key of every secret the machine account can access — self-contained subprocess: decrypts the token itself (reuses `BWS_ACCESS_TOKEN` if set) |
-| `bws run -- <cmd>`                   | Runs `<cmd>` with all BWS secrets injected as environment variables                                                                                         |
-| `cbws-sync-encrypted-secrets`        | Fetches the BWS token from Bitwarden vault and writes it encrypted to `~/.local/secrets/bitwarden.yaml`                                                     |
-| `sops-load-yubikey-recipient`        | Reads the age recipient from YubiKey slot 1 into the repo's `.config/sops/.sops.yaml` (locates clone via `dotfiles-root`)                                   |
-| `dotfiles-root`                      | Prints the live clone's root, resolved backwards from the `~/.config/home-manager` symlink — never hardcode paths                                           |
-| `dotfiles-check`                     | Validates the repo: nixfmt, flake eval, shellcheck on rendered scripts (`scripts/checks/check.py --help`)                                                   |
+| Command                       | What it does                                                                                                                                               |
+| ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `cbws-exec -- <cmd>`          | Primary secrets entrypoint: decrypts the token, runs `<cmd>` via `bws run` scoped to `default_project_id` (or `--project-id`); token dies with the process |
+| `cbws-list-available-secrets` | Lists UUID and Key of every secret the machine account can access — self-contained subprocess: always decrypts a fresh token (one YubiKey PIN + touch)     |
+| `cbws-sync-encrypted-secrets` | Fetches the BWS token from Bitwarden vault and writes it encrypted to `~/.local/secrets/bitwarden.yaml`                                                    |
+| `sops-load-yubikey-recipient` | Reads the age recipient from YubiKey slot 1 into the repo's `.config/sops/.sops.yaml` (locates clone via `dotfiles-root`)                                  |
+| `dotfiles-root`               | Prints the live clone's root, resolved backwards from the `~/.config/home-manager` symlink — never hardcode paths                                          |
+| `dotfiles-check`              | Validates the repo: nixfmt, flake eval, shellcheck on rendered scripts (`scripts/checks/check.py --help`)                                                  |

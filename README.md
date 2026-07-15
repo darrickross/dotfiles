@@ -329,7 +329,9 @@ These steps are safe to run at any time. Make sure the YubiKey is available on t
 
 The primary reason for this setup is to reduce the number of BWS projects and machine accounts: the Bitwarden Secrets Manager **free tier allows only 3 projects and 3 machine accounts**, which is too few to scope a project per workload. The accepted risk is a single machine account whose token reads a single project of co-mingled secrets — any command run through `cbws-exec` receives every secret in the default project.
 
-The compensating controls are on the token's *lifetime* rather than its scope: it only ever exists (1) encrypted on disk under a YubiKey-backed age key, and (2) in the environment of the one process tree started by `cbws-exec`. It is never exported into an interactive shell except via the explicit fallback (`cbws-load-local-machine-credential`).
+The compensating controls are on the token's *lifetime* rather than its scope: it only ever exists (1) encrypted on disk under a YubiKey-backed age key, and (2) in the environment of the one process tree started by `cbws-exec` or `cbws-list-available-secrets`. It is never exported into an interactive shell — no command exists to do so.
+
+The CLI workflow is **read-only**: this machine only reads secrets. Creating, editing, or deleting secrets is done manually in the Bitwarden Secrets Manager web UI.
 
 ### `local-machine-bws-secrets` Secure Note
 
@@ -368,7 +370,7 @@ To see what secrets the machine account has access to:
 cbws-list-available-secrets
 ```
 
-This is self-contained: it prompts for your YubiKey PIN + touch to decrypt the access token, lists the secrets, and exits — the token lives only inside that subprocess and never enters your shell. (If `BWS_ACCESS_TOKEN` is already loaded in your shell, it reuses it and skips the decrypt.)
+This is self-contained: it prompts for your YubiKey PIN + touch to decrypt the access token, lists the secrets, and exits — the token lives only inside that subprocess and never enters your shell.
 
 Output shows the UUID and key name of every secret:
 
@@ -380,34 +382,15 @@ xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx | DATABASE_PASSWORD
 
 The **Key** column is what you use as the environment variable name in your commands.
 
-#### 3. Load the BWS token into your shell (fallback)
+#### 3. Creating or editing secrets — use the web UI
 
-Only needed when the token itself must be in your shell — `bws secret create` or other ad-hoc `bws` calls:
-
-```bash
-cbws-load-local-machine-credential
-```
-
-This decrypts `~/.local/secrets/bitwarden.yaml` with your YubiKey and exports `BWS_ACCESS_TOKEN` into the current shell session. The token is not persisted anywhere else, but note that every child process started from that shell inherits it for the rest of the session — prefer `cbws-exec` whenever possible.
-
-#### 4. `bws run` directly (what `cbws-exec` wraps)
-
-With `BWS_ACCESS_TOKEN` loaded into the shell (step 3), `bws run` fetches the secrets the machine account can access, sets each one as an environment variable named after its **Key**, and then runs the command:
-
-```bash
-bws run --project-id <UUID> -- printenv MY_API_KEY
-```
-
-This is exactly what `cbws-exec` does under the hood — direct use is only worthwhile when the token is already loaded for other work.
-
-> [!IMPORTANT]
-> `bws run` is always a subprocess — it cannot modify your current shell session. Use `cbws-load-local-machine-credential` when you need `BWS_ACCESS_TOKEN` itself in the current shell.
+There is intentionally no command for loading `BWS_ACCESS_TOKEN` into your shell or for writing secrets from the CLI. This machine only **reads** secrets; create, edit, or delete them in the Bitwarden Secrets Manager web UI. (The former `cbws-load-local-machine-credential` loader was removed for this reason — exporting the token into an interactive shell would hand it to every child process for the rest of the session.)
 
 ---
 
 ### Naming Secrets in Bitwarden Secrets Manager
 
-The **Key** field of a secret in Bitwarden Secrets Manager becomes the environment variable name when you use `bws run`. Follow these rules to avoid unexpected behavior:
+The **Key** field of a secret in Bitwarden Secrets Manager becomes the environment variable name when `cbws-exec` (via `bws run`) injects it. Follow these rules to avoid unexpected behavior:
 
 - **Use uppercase with underscores** — `MY_API_KEY`, not `my-api-key`. Lowercase names work but are unconventional for environment variables.
 - **Start with a letter or underscore** — names that start with a digit are invalid in most shells (`1PASSWORD` will fail).
