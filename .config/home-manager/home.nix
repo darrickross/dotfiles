@@ -17,7 +17,7 @@
   # This value determines the Home Manager release that your configuration is
   # compatible with. Do not change it even when updating Home Manager — check
   # the release notes first.
-  home.stateVersion = "25.05";
+  home.stateVersion = "26.05";
 
   # ---------------------------------------------------------------------------
   # Packages
@@ -55,6 +55,31 @@
       py.rich # dotfiles/scripts/video/mkv-info, mkv-scan.py, rename-media.py
       py.segno # dotfiles/scripts/qr-codes/generate.py
       py.weasyprint # dotfiles/scripts/qr-codes/generate.py
+
+      # Bitwarden Secrets Manager SDK — dotfiles/scripts/bitwarden/secret-set.py
+      # (cbws-secret-set, modules/secrets.nix). Lives in this main env (not a
+      # private one in secrets.nix) so the VS Code interpreter
+      # (~/.nix-profile/bin/python3) can import it. Not packaged in nixpkgs,
+      # so built from the official PyPI binary wheel (cp39-abi3: one wheel
+      # for every python >= 3.9, including this 3.13). To bump: update
+      # version, take the new manylinux x86_64 wheel URL + sha256 from
+      # https://pypi.org/pypi/bitwarden-sdk/json and convert the hash with
+      # `nix hash convert --hash-algo sha256 --to sri <hex>`.
+      (py.buildPythonPackage {
+        pname = "bitwarden-sdk";
+        version = "2.1.0";
+        format = "wheel";
+        src = pkgs.fetchurl {
+          url = "https://files.pythonhosted.org/packages/7e/f4/ccdcadee82f88ec3c52a3b6e0db11df4c5587db171a2c979e4e9eb76b1d4/bitwarden_sdk-2.1.0-cp39-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl";
+          hash = "sha256-tvayYk40AweJHtwgooYOwLfCFAaD7sLOLiDRB2/+kmg=";
+        };
+        # The wheel bundles a Rust native extension; autoPatchelf points it
+        # at nix's libc/libgcc instead of the manylinux paths.
+        nativeBuildInputs = [ pkgs.autoPatchelfHook ];
+        buildInputs = [ pkgs.stdenv.cc.cc.lib ];
+        dependencies = [ py.python-dateutil ];
+        pythonImportsCheck = [ "bitwarden_sdk" ];
+      })
     ]))
     shellcheck # vscode plugin: timonwong.shellcheck
     shfmt # vscode plugin: foxundermoon.shell-format

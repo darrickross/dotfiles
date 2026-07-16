@@ -123,8 +123,10 @@ Verify that Home Manager applied the configuration correctly by checking that ma
 home-manager generations
 
 # Confirm managed scripts are on PATH
-which bws-check-available-secrets
-which bw_sync_encrypted_secrets.sh
+which cbws-exec
+which cbws-list-available-secrets
+which cbws-secret-set
+which cbws-sync-encrypted-secrets
 
 # Confirm the repo clone resolves from the symlink made in step 3
 dotfiles-root
@@ -324,40 +326,53 @@ These steps are safe to run at any time. Make sure the YubiKey is available on t
 
 ## Bitwarden Setup
 
+### Design rationale — one machine account, one project
+
+The primary reason for this setup is to reduce the number of BWS projects and machine accounts: the Bitwarden Secrets Manager **free tier allows only 3 projects and 3 machine accounts**, which is too few to scope a project per workload. The accepted risk is a single machine account whose token reads a single project of co-mingled secrets — any command run through `cbws-exec` receives every secret in the default project.
+
+The compensating controls are on the token's *lifetime* rather than its scope: it only ever exists (1) encrypted on disk under a YubiKey-backed age key, and (2) in the environment of the one process tree started by `cbws-exec` or `cbws-list-available-secrets`. It is never exported into an interactive shell — no command exists to do so.
+
+The CLI workflow is read-first: day-to-day commands (`cbws-exec`, `cbws-list-available-secrets`) only read secrets. The single write path is `cbws-secret-set` — a deliberate, YubiKey-gated command that takes the value on stdin. Bulk management and deletion stay in the Bitwarden Secrets Manager web UI.
+
 ### `local-machine-bws-secrets` Secure Note
 
-The `bw_sync_encrypted_secrets.sh` script fetches a Bitwarden Secure Note named **`local-machine-bws-secrets`** from your primary Bitwarden account. The Notes field must contain valid YAML in the following format:
+The `cbws-sync-encrypted-secrets` script fetches a Bitwarden Secure Note named **`local-machine-bws-secrets`** from your primary Bitwarden account. The Notes field must contain valid YAML in the following format:
 
 ```yaml
 local_computer_machine_account_bws_access_token: "your-bws-access-token"
+default_project_id: "your-default-project-id"
+organization_id: "your-organization-id"
 ```
 
-The BWS access token comes from the Bitwarden Secrets Manager web app under the machine account for this computer.
+The BWS access token comes from the Bitwarden Secrets Manager web app under the machine account for this computer. `default_project_id` is the UUID of the BWS project whose secrets `cbws-exec` injects when `--project-id` is not given — find it in the Secrets Manager web app under **Projects**. `organization_id` is required by `cbws-secret-set` (the SDK's write calls are organization-scoped) — it is the UUID in the Secrets Manager web-app URL: `https://vault.bitwarden.com/#/sm/<organization_id>/...`.
 
 > [!NOTE]
-> Run `bw_sync_encrypted_secrets.sh` on first setup, or any time the BWS access token is rotated. It encrypts the token locally with your YubiKey so it never sits on disk in plaintext.
+> Run `cbws-sync-encrypted-secrets` on first setup, or any time the BWS access token is rotated. It encrypts the token locally with your YubiKey so it never sits on disk in plaintext.
 
 ---
 
 ### Daily Workflow
 
-#### 1. Load the BWS token into your shell
+#### 1. Run a command with secrets injected — `cbws-exec` (primary)
 
-Before using any `bws` commands, load the token from the encrypted local file:
+`cbws-exec` is the default way to use secrets. It decrypts the BWS access token with your YubiKey (one PIN + touch), then runs your command via `bws run` scoped to `default_project_id` — each secret's **Key** becomes an environment variable in the command's process tree:
 
 ```bash
-bws-load-local-machine-credential
+cbws-exec -- ./my-script-here               # script reads secrets from env vars
+cbws-exec --project-id <UUID> -- ./deploy.sh # override the default project
 ```
 
-This decrypts `~/.local/secrets/bitwarden.yaml` with your YubiKey and exports `BWS_ACCESS_TOKEN` into the current shell session. The token is not persisted anywhere else.
+Write your scripts to assume the secrets are already present as environment variables. The token and the secrets exist only for the lifetime of the command: nothing is exported into your interactive shell, and nothing touches disk or shell history. Each invocation costs one YubiKey touch, which is the point — decryption always requires physical presence.
 
 #### 2. List available secrets
 
 To see what secrets the machine account has access to:
 
 ```bash
-bws-check-available-secrets
+cbws-list-available-secrets
 ```
+
+This is self-contained: it prompts for your YubiKey PIN + touch to decrypt the access token, lists the secrets, and exits — the token lives only inside that subprocess and never enters your shell.
 
 Output shows the UUID and key name of every secret:
 
@@ -369,36 +384,28 @@ xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx | DATABASE_PASSWORD
 
 The **Key** column is what you use as the environment variable name in your commands.
 
-#### 3. Inject secrets into a command with `bws run`
+#### 3. Create or update a secret — `cbws-secret-set`
 
-`bws run` fetches all secrets the machine account can access, sets each one as an environment variable named after its **Key**, and then runs the command:
-
-```bash
-bws run -- <COMMAND>
-```
-
-Example — print a secret value:
+The only write path from this machine. The secret **value comes from stdin** — piped, or typed at a hidden prompt — so it never appears in shell history or `ps` output:
 
 ```bash
-bws run -- printenv MY_API_KEY
+openssl rand -base64 32 | cbws-secret-set MY_API_KEY   # piped value
+cbws-secret-set MY_API_KEY                             # interactive, hidden prompt
+cbws-secret-set --project-id <UUID> MY_API_KEY         # override the default project
 ```
 
-Example — pass a secret to a script without it ever touching your shell history:
+Like the read commands, it decrypts the access token itself (one YubiKey PIN + touch) and the token dies with the process. If the key already exists in the organization you are asked to confirm the overwrite on the terminal (`-y`/`--yes` skips the prompt — required when scripting without a tty); the existing secret's note is preserved. Requirements:
 
-```bash
-bws run -- ./deploy.sh
-```
+- The machine account must have **read-write** access to the target project (Secrets Manager web app → Machine accounts → Projects).
+- `organization_id` must be present in the Secure Note (see above).
 
-The command has access to every secret as a plain environment variable. The values are never written to disk and are not visible in your shell's history.
-
-> [!IMPORTANT]
-> `bws run` is always a subprocess — it cannot modify your current shell session. Use `bws-load-local-machine-credential` when you need `BWS_ACCESS_TOKEN` itself in the current shell.
+There is still intentionally no command for loading `BWS_ACCESS_TOKEN` into your shell — exporting the token into an interactive shell would hand it to every child process for the rest of the session. Deleting secrets and bulk management stay in the Bitwarden Secrets Manager web UI.
 
 ---
 
 ### Naming Secrets in Bitwarden Secrets Manager
 
-The **Key** field of a secret in Bitwarden Secrets Manager becomes the environment variable name when you use `bws run`. Follow these rules to avoid unexpected behavior:
+The **Key** field of a secret in Bitwarden Secrets Manager becomes the environment variable name when `cbws-exec` (via `bws run`) injects it. Follow these rules to avoid unexpected behavior:
 
 - **Use uppercase with underscores** — `MY_API_KEY`, not `my-api-key`. Lowercase names work but are unconventional for environment variables.
 - **Start with a letter or underscore** — names that start with a digit are invalid in most shells (`1PASSWORD` will fail).

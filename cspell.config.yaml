@@ -3,6 +3,7 @@
 # scripts/cspell/import-vscode-words.py (dedupes + sorts on every run).
 version: "0.2"
 words:
+  - analyzeduration
   - apikey
   - argcomplete
   - autojunk
@@ -13,8 +14,12 @@ words:
   - clearsign
   - CLIENTID
   - CLIENTSECRET
+  - compgen
   - compopt
   - COMPREPLY
+  - CREAT
+  - CWORD
+  - dateutil
   - dircolors
   - docstrings
   - dotfile
@@ -24,11 +29,14 @@ words:
   - endfor
   - endmacro
   - erasedups
+  - esac
   - executiontime
   - Fantasque
+  - fetchurl
   - ffprobe
   - fgrep
   - foxundermoon
+  - fullwidth
   - Gitschooldude
   - gpgconf
   - gpgparsemail
@@ -40,20 +48,33 @@ words:
   - histappend
   - homelab
   - ignoreboth
+  - ignoredups
+  - ignorespace
   - isalpha
   - isdigit
   - jnoortheen
   - Kalam
+  - Kbps
   - kddejong
+  - keepends
   - Kleopatra
   - lesspipe
+  - libc
+  - libgcc
   - libpam
   - libx
+  - lightspeed
   - linecap
   - linejoin
   - lrwxrwxrwx
+  - manylinux
+  - mapfile
+  - Mbps
   - mktemp
+  - mkvmerge
   - mkvtoolnix
+  - Muxer
+  - muxing
   - nbsp
   - nerdfonts
   - newermt
@@ -65,9 +86,12 @@ words:
   - openpgp
   - opentofu
   - passwordenv
+  - Patchelf
   - pdfs
   - pipefail
   - pkgs
+  - pname
+  - probesize
   - pssst
   - pycache
   - pypdf
@@ -78,6 +102,7 @@ words:
   - setaf
   - setf
   - shellcheck
+  - shellformat
   - shfmt
   - SHLVL
   - signingkey
@@ -85,10 +110,12 @@ words:
   - svgns
   - timonwong
   - toplevel
+  - ufeff
   - usbipd
   - vdir
   - venv
   - WeasyPrint
+  - WRONLY
   - wslpath
   - xmldecl
   - yubikey

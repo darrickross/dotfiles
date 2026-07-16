@@ -1,0 +1,16 @@
+{
+  // VS Code Remote (WSL) machine-scope settings, deployed read-only by
+  // home-manager (modules/dotfiles.nix) — edit here, then run 'hms'.
+  // This level is for machine-specific paths and WSL-only toolchain
+  // bindings; personal editor style lives in the (Windows) User settings,
+  // project conventions in each repo's .vscode/settings.json.
+  "ansible.lightspeed.enabled": false,
+  "ansible.lightspeed.suggestions.enabled": false,
+  "ansible.python.interpreterPath": "~/.nix-profile/bin/python3",
+  "files.eol": "\n",
+  "nix.formatterPath": "nixfmt",
+  "python-envs.defaultEnvManager": "ms-python.python:system",
+  "python.defaultInterpreterPath": "~/.nix-profile/bin/python3",
+  // Shellformat extension v7.2.8 has problems; workaround is v7.2.5.
+  "shellformat.path": "~/.nix-profile/bin/shfmt"
+}
