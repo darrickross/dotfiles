@@ -75,5 +75,14 @@
       source = ../../sops/.sops.yaml;
       force = true;
     };
+
+    # VS Code Remote (WSL) machine-scope settings. Like every file here the
+    # deployed copy is a read-only store symlink, so changing a
+    # "Remote [WSL]" setting through the VS Code settings UI will fail —
+    # edit the repo copy and run 'hms' instead.
+    ".vscode-server/data/Machine/settings.json" = {
+      source = ../../../.vscode-server/data/Machine/settings.json;
+      force = true;
+    };
   };
 }

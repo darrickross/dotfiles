@@ -1,0 +1,3 @@
+{
+  "python.defaultInterpreterPath": "~/.nix-profile/bin/python3"
+}
