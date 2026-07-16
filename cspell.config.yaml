@@ -19,6 +19,7 @@ words:
   - COMPREPLY
   - CREAT
   - CWORD
+  - dateutil
   - dircolors
   - docstrings
   - dotfile
@@ -31,6 +32,7 @@ words:
   - esac
   - executiontime
   - Fantasque
+  - fetchurl
   - ffprobe
   - fgrep
   - foxundermoon
@@ -57,11 +59,14 @@ words:
   - keepends
   - Kleopatra
   - lesspipe
+  - libc
+  - libgcc
   - libpam
   - libx
   - linecap
   - linejoin
   - lrwxrwxrwx
+  - manylinux
   - mapfile
   - Mbps
   - mktemp
@@ -80,9 +85,11 @@ words:
   - openpgp
   - opentofu
   - passwordenv
+  - Patchelf
   - pdfs
   - pipefail
   - pkgs
+  - pname
   - probesize
   - pssst
   - pycache

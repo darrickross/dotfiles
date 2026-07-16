@@ -125,6 +125,7 @@ home-manager generations
 # Confirm managed scripts are on PATH
 which cbws-exec
 which cbws-list-available-secrets
+which cbws-secret-set
 which cbws-sync-encrypted-secrets
 
 # Confirm the repo clone resolves from the symlink made in step 3
@@ -331,7 +332,7 @@ The primary reason for this setup is to reduce the number of BWS projects and ma
 
 The compensating controls are on the token's *lifetime* rather than its scope: it only ever exists (1) encrypted on disk under a YubiKey-backed age key, and (2) in the environment of the one process tree started by `cbws-exec` or `cbws-list-available-secrets`. It is never exported into an interactive shell — no command exists to do so.
 
-The CLI workflow is **read-only**: this machine only reads secrets. Creating, editing, or deleting secrets is done manually in the Bitwarden Secrets Manager web UI.
+The CLI workflow is read-first: day-to-day commands (`cbws-exec`, `cbws-list-available-secrets`) only read secrets. The single write path is `cbws-secret-set` — a deliberate, YubiKey-gated command that takes the value on stdin. Bulk management and deletion stay in the Bitwarden Secrets Manager web UI.
 
 ### `local-machine-bws-secrets` Secure Note
 
@@ -340,9 +341,10 @@ The `cbws-sync-encrypted-secrets` script fetches a Bitwarden Secure Note named *
 ```yaml
 local_computer_machine_account_bws_access_token: "your-bws-access-token"
 default_project_id: "your-default-project-id"
+organization_id: "your-organization-id"
 ```
 
-The BWS access token comes from the Bitwarden Secrets Manager web app under the machine account for this computer. `default_project_id` is the UUID of the BWS project whose secrets `cbws-exec` injects when `--project-id` is not given — find it in the Secrets Manager web app under **Projects**.
+The BWS access token comes from the Bitwarden Secrets Manager web app under the machine account for this computer. `default_project_id` is the UUID of the BWS project whose secrets `cbws-exec` injects when `--project-id` is not given — find it in the Secrets Manager web app under **Projects**. `organization_id` is required by `cbws-secret-set` (the SDK's write calls are organization-scoped) — it is the UUID in the Secrets Manager web-app URL: `https://vault.bitwarden.com/#/sm/<organization_id>/...`.
 
 > [!NOTE]
 > Run `cbws-sync-encrypted-secrets` on first setup, or any time the BWS access token is rotated. It encrypts the token locally with your YubiKey so it never sits on disk in plaintext.
@@ -382,9 +384,22 @@ xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx | DATABASE_PASSWORD
 
 The **Key** column is what you use as the environment variable name in your commands.
 
-#### 3. Creating or editing secrets — use the web UI
+#### 3. Create or update a secret — `cbws-secret-set`
 
-There is intentionally no command for loading `BWS_ACCESS_TOKEN` into your shell or for writing secrets from the CLI. This machine only **reads** secrets; create, edit, or delete them in the Bitwarden Secrets Manager web UI. (The former `cbws-load-local-machine-credential` loader was removed for this reason — exporting the token into an interactive shell would hand it to every child process for the rest of the session.)
+The only write path from this machine. The secret **value comes from stdin** — piped, or typed at a hidden prompt — so it never appears in shell history or `ps` output:
+
+```bash
+openssl rand -base64 32 | cbws-secret-set MY_API_KEY   # piped value
+cbws-secret-set MY_API_KEY                             # interactive, hidden prompt
+cbws-secret-set --project-id <UUID> MY_API_KEY         # override the default project
+```
+
+Like the read commands, it decrypts the access token itself (one YubiKey PIN + touch) and the token dies with the process. If the key already exists in the organization you are asked to confirm the overwrite on the terminal (`-y`/`--yes` skips the prompt — required when scripting without a tty); the existing secret's note is preserved. Requirements:
+
+- The machine account must have **read-write** access to the target project (Secrets Manager web app → Machine accounts → Projects).
+- `organization_id` must be present in the Secure Note (see above).
+
+There is still intentionally no command for loading `BWS_ACCESS_TOKEN` into your shell — exporting the token into an interactive shell would hand it to every child process for the rest of the session. Deleting secrets and bulk management stay in the Bitwarden Secrets Manager web UI.
 
 ---
 

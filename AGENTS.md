@@ -53,8 +53,9 @@ The Bitwarden Secrets Manager (BWS) access token is the credential that unlocks 
 
 - Stored encrypted at `~/.local/secrets/bitwarden.yaml` using sops + age + YubiKey, alongside `default_project_id` (the BWS project `cbws-exec` scopes to by default)
 - Encrypted under the age recipient in `.config/sops/.sops.yaml` (a YubiKey-backed key, slot 1); home-manager places a copy at `~/.config/sops/.sops.yaml`, which is what scripts pass to `sops --config`
-- Consumed only by `cbws-exec` and `cbws-list-available-secrets`, which decrypt it, use it in a child process, and let it die with that process — the token never enters the interactive shell. There is deliberately no command that exports `BWS_ACCESS_TOKEN` into the shell; do not add one
-- **Read-only from this machine**: the CLI workflow only reads secrets. Creating, editing, or deleting secrets is done in the Bitwarden Secrets Manager web UI
+- Consumed only by `cbws-exec`, `cbws-list-available-secrets`, and `cbws-secret-set`, which decrypt it, use it in a child process, and let it die with that process — the token never enters the interactive shell. There is deliberately no command that exports `BWS_ACCESS_TOKEN` into the shell; do not add one
+- Stored alongside `default_project_id` and `organization_id` (the latter required by `cbws-secret-set` — SDK write calls are organization-scoped)
+- **Read-first**: `cbws-exec` and `cbws-list-available-secrets` only read. The single write path is `cbws-secret-set` (value via stdin only — never as an argument, which would leak into shell history/`ps`). Deletion and bulk management happen in the Bitwarden Secrets Manager web UI; do not add other write paths
 
 The file `~/.local/secrets/bitwarden.yaml` is in `.gitignore` and must never be committed. It is re-created by running `cbws-sync-encrypted-secrets`.
 
@@ -68,7 +69,14 @@ cbws-exec -- <command>                       # scoped to default_project_id
 cbws-exec --project-id <UUID> -- <command>   # override the project
 ```
 
-`bws run` (which `cbws-exec` wraps) sets each secret as an environment variable named after its **Key** field in BWS, then execs the command — write scripts to read their secrets from those environment variables. The values are never written to disk and do not appear in shell history. Direct `bws` calls are not part of the workflow: nothing exports `BWS_ACCESS_TOKEN` into an interactive shell (that would hand it to every subsequent child process for the life of the session), and secrets are created or edited in the web UI, not the CLI.
+```bash
+# Write path (the only one): value from stdin, confirm-before-overwrite
+some-generator | cbws-secret-set <KEY>            # piped value
+cbws-secret-set <KEY>                             # hidden interactive prompt
+cbws-secret-set -y <KEY> < value.txt              # no-tty scripting (auto-approve)
+```
+
+`bws run` (which `cbws-exec` wraps) sets each secret as an environment variable named after its **Key** field in BWS, then execs the command — write scripts to read their secrets from those environment variables. The values are never written to disk and do not appear in shell history. Direct `bws` calls are not part of the workflow: nothing exports `BWS_ACCESS_TOKEN` into an interactive shell (that would hand it to every subsequent child process for the life of the session). Writes go through `cbws-secret-set` (`scripts/bitwarden/secret-set.py`, Bitwarden Python SDK) and nothing else.
 
 ---
 
@@ -171,6 +179,7 @@ cat notes.md | scripts/markdown/fix-tables.py        # stdin -> stdout (for here
 | `~/.config/sops/.sops.yaml`                 | Deployed copy of the above, placed by home-manager — scripts pass this path to `sops --config`                |
 | `~/.local/secrets/bitwarden.yaml`           | Encrypted BWS access token + default project id — gitignored, created by `cbws-sync-encrypted-secrets`        |
 | `~/.config/age/yubikey-identity.txt`        | YubiKey age identity stanza — required by sops at runtime via `SOPS_AGE_KEY_FILE`                             |
+| `scripts/bitwarden/secret-set.py`           | Python source of `cbws-secret-set` (Bitwarden SDK; pinned in `home.nix` python so VS Code can import it too)  |
 
 ## Available commands (after home-manager switch)
 
@@ -178,6 +187,7 @@ cat notes.md | scripts/markdown/fix-tables.py        # stdin -> stdout (for here
 | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `cbws-exec -- <cmd>`          | Primary secrets entrypoint: decrypts the token, runs `<cmd>` via `bws run` scoped to `default_project_id` (or `--project-id`); token dies with the process |
 | `cbws-list-available-secrets` | Lists UUID and Key of every secret the machine account can access — self-contained subprocess: always decrypts a fresh token (one YubiKey PIN + touch)     |
+| `cbws-secret-set <KEY>`       | The only write path: creates/updates a secret, value from stdin, confirms overwrite (`-y` to skip); wraps `scripts/bitwarden/secret-set.py` (SDK)          |
 | `cbws-sync-encrypted-secrets` | Fetches the BWS token from Bitwarden vault and writes it encrypted to `~/.local/secrets/bitwarden.yaml`                                                    |
 | `sops-load-yubikey-recipient` | Reads the age recipient from YubiKey slot 1 into the repo's `.config/sops/.sops.yaml` (locates clone via `dotfiles-root`)                                  |
 | `dotfiles-root`               | Prints the live clone's root, resolved backwards from the `~/.config/home-manager` symlink — never hardcode paths                                          |

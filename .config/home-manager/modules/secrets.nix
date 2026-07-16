@@ -272,6 +272,24 @@ in
       '';
     };
 
+    # The single, deliberate *write* path to Secrets Manager — everything
+    # else here is read-only. Wraps scripts/bitwarden/secret-set.py, which
+    # reads the value from stdin, decrypts the token itself (one YubiKey
+    # PIN + touch), and asks before overwriting an existing key (-y/--yes
+    # to skip). Requires the machine account to have read-write access to
+    # the project. The Bitwarden SDK it imports is declared in home.nix's
+    # main python env (not here) so the VS Code interpreter
+    # (~/.nix-profile/bin/python3) can also import it.
+    ".local/bin/cbws-secret-set" = {
+      executable = true;
+      force = true;
+      text = ''
+        #!/usr/bin/env bash
+        set -euo pipefail
+        exec python3 "$(dotfiles-root)/scripts/bitwarden/secret-set.py" "$@"
+      '';
+    };
+
     # Sync secrets from Bitwarden and re-encrypt locally with YubiKey.
     # Run on first setup or after rotating tokens.
     ".local/bin/cbws-sync-encrypted-secrets" = {
