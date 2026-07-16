@@ -1,44 +1,11 @@
 {
-  "cSpell.words": [],
-  // Add TOML settings
-  "evenBetterToml.formatter.alignEntries": true,
-  "evenBetterToml.formatter.allowedBlankLines": 1,
-  "evenBetterToml.formatter.indentEntries": true,
-  "evenBetterToml.formatter.indentString": "  ",
-  "evenBetterToml.formatter.indentTables": true,
-  "evenBetterToml.formatter.reorderKeys": true,
+  // Workspace level holds only conventions specific to this repo's files.
+  // Editor style lives in User settings (dotfiles-windows repo); WSL
+  // machine paths live in .vscode-server/data/Machine/settings.json
+  // (deployed by home-manager). Spelling uses cspell.config.yaml, not
+  // cSpell.words here.
   "files.associations": {
     "config": "ssh_config",
     "*.ssh_config": "ssh_config"
-  },
-  "nix.formatterPath": "nixfmt",
-  // Shellformater v7.2.8 has problems, work around is to downgrade to v7.2.5
-  "shellformat.path": "shfmt",
-  "[jsonc]": {
-    "editor.tabSize": 2,
-    "editor.insertSpaces": true
-  },
-  "[markdown]": {
-    "editor.tabSize": 2,
-    "editor.insertSpaces": true,
-    "editor.defaultFormatter": "DavidAnson.vscode-markdownlint"
-  },
-  "[nix]": {
-    "editor.tabSize": 2,
-    "editor.insertSpaces": true,
-    "editor.defaultFormatter": "jnoortheen.nix-ide"
-  },
-  "[shellscript]": {
-    "editor.tabSize": 4,
-    "editor.insertSpaces": true,
-    "editor.defaultFormatter": "foxundermoon.shell-format"
-  },
-  "[toml]": {
-    "editor.tabSize": 2,
-    "editor.insertSpaces": true,
-    "editor.defaultFormatter": "tamasfe.even-better-toml"
-  },
-  // Enable format on save
-  "editor.formatOnSave": true,
-  "python-envs.defaultEnvManager": "ms-python.python:system"
+  }
 }

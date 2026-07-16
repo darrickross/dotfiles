@@ -63,6 +63,7 @@ words:
   - libgcc
   - libpam
   - libx
+  - lightspeed
   - linecap
   - linejoin
   - lrwxrwxrwx
@@ -101,6 +102,7 @@ words:
   - setaf
   - setf
   - shellcheck
+  - shellformat
   - shfmt
   - SHLVL
   - signingkey
