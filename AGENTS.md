@@ -43,6 +43,8 @@ This machine runs Linux under WSL2. Several tools forward to Windows binaries to
 
 This repo uses a two-layer system. Never collapse these layers or short-circuit them.
 
+The consumer-facing guide — how *other* repos on this machine use these tools — is `docs/secrets.md`, which `modules/dotfiles.nix` also deploys to `~/.local/share/doc/cbws/secrets.md` so consumer repos can reference it at a stable path. A machine-wide summary for agents is deployed to `~/.claude/CLAUDE.md` from `.claude/CLAUDE.md`. When the workflow or command names change, update both alongside this file — stale copies of this workflow in other repos have caused real drift before.
+
 ### Design rationale — one machine account, one project
 
 The primary reason for this shape is to minimize the number of BWS projects and machine accounts: the Bitwarden Secrets Manager **free tier allows only 3 projects and 3 machine accounts**, which is too few to scope a project per workload. The accepted risk is a single machine account whose token reads a single project of co-mingled secrets — anything run through `cbws-exec` receives every secret in that project. The compensating controls are on the token's lifetime, not its scope: it only ever exists (1) sops+age(YubiKey)-encrypted on disk and (2) in the environment of the one process tree `cbws-exec` starts. Do not "improve" this by splitting projects or machine accounts without checking the tier limits first.
@@ -180,6 +182,8 @@ cat notes.md | scripts/markdown/fix-tables.py        # stdin -> stdout (for here
 | `~/.local/secrets/bitwarden.yaml`           | Encrypted BWS access token + default project id — gitignored, created by `cbws-sync-encrypted-secrets`        |
 | `~/.config/age/yubikey-identity.txt`        | YubiKey age identity stanza — required by sops at runtime via `SOPS_AGE_KEY_FILE`                             |
 | `scripts/bitwarden/secret-set.py`           | Python source of `cbws-secret-set` (Bitwarden SDK; pinned in `home.nix` python so VS Code can import it too)  |
+| `docs/secrets.md`                           | Canonical consumer guide to the secrets tooling — deployed to `~/.local/share/doc/cbws/secrets.md`            |
+| `.claude/CLAUDE.md`                         | Machine-wide Claude Code memory (secrets contract + Home Manager rules) — deployed to `~/.claude/CLAUDE.md`   |
 
 ## Available commands (after home-manager switch)
 

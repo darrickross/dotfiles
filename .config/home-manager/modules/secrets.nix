@@ -69,6 +69,25 @@ in
         #!/usr/bin/env bash
         set -euo pipefail
 
+        usage() {
+          echo "Usage: sops-load-yubikey-recipient"
+          echo ""
+          echo "Reads the age recipient (public key) from YubiKey slot 1 and writes"
+          echo "it into the dotfiles repo's .config/sops/.sops.yaml (clone located"
+          echo "via dotfiles-root). Run 'hms' afterwards to deploy the updated file"
+          echo "to ~/.config/sops/.sops.yaml. Setup-time only; reads public metadata"
+          echo "only — no PIN or touch required."
+          echo ""
+          echo "Docs: ~/.local/share/doc/cbws/secrets.md"
+        }
+
+        if [[ $# -gt 0 ]]; then
+          case "$1" in
+            -h | --help) usage; exit 0 ;;
+            *) echo "Error: unexpected argument: $1" >&2; usage >&2; exit 1 ;;
+          esac
+        fi
+
         # dotfiles-root prints its own actionable error if the
         # ~/.config/home-manager symlink is missing or broken.
         REPO_ROOT=$(dotfiles-root)
@@ -132,6 +151,8 @@ in
           echo ""
           echo "Example:"
           echo "  cbws-exec -- ./my-script-here   # script reads secrets from env vars"
+          echo ""
+          echo "Docs: ~/.local/share/doc/cbws/secrets.md"
         }
 
         PROJECT_ID=""
@@ -236,6 +257,24 @@ in
         #!/usr/bin/env bash
         set -euo pipefail
 
+        usage() {
+          echo "Usage: cbws-list-available-secrets"
+          echo ""
+          echo "Lists the UUID and Key of every BWS secret the machine account can"
+          echo "read. Self-contained: decrypts a fresh access token (one YubiKey"
+          echo "PIN + touch), lists, and exits — the token dies with this process"
+          echo "and never enters the calling shell."
+          echo ""
+          echo "Docs: ~/.local/share/doc/cbws/secrets.md"
+        }
+
+        if [[ $# -gt 0 ]]; then
+          case "$1" in
+            -h | --help) usage; exit 0 ;;
+            *) echo "Error: unexpected argument: $1" >&2; usage >&2; exit 1 ;;
+          esac
+        fi
+
         SECRETS_FILE="$HOME/.local/secrets/bitwarden.yaml"
 
         # Preflight: check decryption prerequisites up front so failures
@@ -298,6 +337,26 @@ in
       text = ''
         #!/usr/bin/env bash
         set -euo pipefail
+
+        usage() {
+          echo "Usage: cbws-sync-encrypted-secrets"
+          echo ""
+          echo "Setup/rotation only. Logs into the Bitwarden vault (interactive),"
+          echo "fetches the '${bitwardenVaultItem}' Secure Note (BWS access token +"
+          echo "project/organization ids), and writes it sops+age(YubiKey)"
+          echo "encrypted to ~/.local/secrets/bitwarden.yaml — the file every"
+          echo "other cbws-* command decrypts. Asks before replacing an existing"
+          echo "file."
+          echo ""
+          echo "Docs: ~/.local/share/doc/cbws/secrets.md"
+        }
+
+        if [[ $# -gt 0 ]]; then
+          case "$1" in
+            -h | --help) usage; exit 0 ;;
+            *) echo "Error: unexpected argument: $1" >&2; usage >&2; exit 1 ;;
+          esac
+        fi
 
         # Ensure the secrets file (and the tmpfiles below) are never created
         # world/group readable.

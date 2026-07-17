@@ -326,6 +326,9 @@ These steps are safe to run at any time. Make sure the YubiKey is available on t
 
 ## Bitwarden Setup
 
+> [!NOTE]
+> This section covers first-time setup and internals. For the day-to-day guide to *using* these tools from any repo on this machine — the consumer contract — see [docs/secrets.md](docs/secrets.md), also deployed to `~/.local/share/doc/cbws/secrets.md`.
+
 ### Design rationale — one machine account, one project
 
 The primary reason for this setup is to reduce the number of BWS projects and machine accounts: the Bitwarden Secrets Manager **free tier allows only 3 projects and 3 machine accounts**, which is too few to scope a project per workload. The accepted risk is a single machine account whose token reads a single project of co-mingled secrets — any command run through `cbws-exec` receives every secret in the default project.
