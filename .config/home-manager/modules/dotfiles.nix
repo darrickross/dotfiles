@@ -76,6 +76,23 @@
       force = true;
     };
 
+    # Machine-wide Claude Code memory — loaded into every Claude Code
+    # session on this machine, in every repo. Documents the cbws-* secrets
+    # contract so agents in consumer repos (homelab, etc.) handle
+    # credentials correctly without those repos re-documenting it.
+    ".claude/CLAUDE.md" = {
+      source = ../../../.claude/CLAUDE.md;
+      force = true;
+    };
+
+    # Canonical consumer guide for the secrets tooling, deployed to a
+    # stable home path so any repo can reference it without knowing where
+    # the dotfiles clone lives.
+    ".local/share/doc/cbws/secrets.md" = {
+      source = ../../../docs/secrets.md;
+      force = true;
+    };
+
     # VS Code Remote (WSL) machine-scope settings. Like every file here the
     # deployed copy is a read-only store symlink, so changing a
     # "Remote [WSL]" setting through the VS Code settings UI will fail —

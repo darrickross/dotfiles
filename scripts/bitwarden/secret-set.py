@@ -148,6 +148,7 @@ def main() -> None:
         prog="cbws-secret-set",
         description="Create or update a Bitwarden Secrets Manager secret. "
         "The value is read from stdin (piped, or a hidden prompt).",
+        epilog="Docs: ~/.local/share/doc/cbws/secrets.md",
     )
     parser.add_argument(
         "key", help="secret Key (becomes the env var name under cbws-exec)"
