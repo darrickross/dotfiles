@@ -9,6 +9,7 @@
     "tamasfe.even-better-toml",
     "timonwong.shellcheck",
     "wholroyd.jinja",
-    "yahyabatulu.vscode-markdown-alert"
+    "yahyabatulu.vscode-markdown-alert",
+    "continue.continue"
   ]
 }
