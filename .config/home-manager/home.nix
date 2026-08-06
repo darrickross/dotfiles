@@ -118,6 +118,7 @@
     # `yq` is a wrapper around `jq`
     # `yq-go` is a native yaml version
     # Both install to `yq`
+    yt-dlp
   ];
 
   # Packages that are allowed to be "Unfree".
