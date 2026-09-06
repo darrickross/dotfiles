@@ -154,6 +154,116 @@ in
     '';
   };
 
+  # Batch downloader: opens the ytdlp profile to YouTube, waits for a human
+  # to confirm it is logged in, then runs yt-dlp-cookies once per URL with a
+  # randomized delay between downloads (avoids firing requests back-to-back).
+  #
+  # The "is it actually logged in / on YouTube" check is a plain y/N prompt
+  # rather than an attempt to inspect tabs: doing that for real needs
+  # Firefox's remote-debugging or Marionette protocol wired up just for this
+  # one check, which is a lot of moving parts (and another port/permission to
+  # reason about) for what a human glancing at the screen answers instantly.
+  home.file.".local/bin/wrapper-yt-dlp" = {
+    executable = true;
+    force = true;
+    text = ''
+      #!/usr/bin/env bash
+      set -euo pipefail
+
+      FIREFOX="${firefoxWin}"
+      PROFILE_NAME="${profileName}"
+
+      usage() {
+        cat >&2 <<'USAGE'
+      wrapper-yt-dlp — download multiple URLs via yt-dlp-cookies, spaced out
+      with a randomized delay so requests do not fire back-to-back.
+
+        wrapper-yt-dlp [--min=SECONDS] [--max=SECONDS] URL [URL...]
+
+        --min=SECONDS   minimum delay between downloads (default: 15)
+        --max=SECONDS   maximum delay between downloads (default: 60)
+
+      Opens (or focuses) youtube.com in the dedicated "ytdlp" Firefox profile
+      first and asks for confirmation before downloading anything.
+      USAGE
+      }
+
+      MIN=15
+      MAX=60
+      URLS=()
+
+      for arg in "$@"; do
+        case "$arg" in
+          --min=*) MIN="''${arg#--min=}" ;;
+          --max=*) MAX="''${arg#--max=}" ;;
+          --help | -h)
+            usage
+            exit 0
+            ;;
+          -*)
+            echo "wrapper-yt-dlp: unknown option: $arg" >&2
+            usage
+            exit 1
+            ;;
+          *) URLS+=("$arg") ;;
+        esac
+      done
+
+      if [[ ! "$MIN" =~ ^[0-9]+$ || ! "$MAX" =~ ^[0-9]+$ ]]; then
+        echo "wrapper-yt-dlp: --min and --max must be non-negative integers" >&2
+        exit 1
+      fi
+      if ((MIN > MAX)); then
+        echo "wrapper-yt-dlp: --min ($MIN) cannot be greater than --max ($MAX)" >&2
+        exit 1
+      fi
+      if [[ ''${#URLS[@]} -eq 0 ]]; then
+        usage
+        exit 1
+      fi
+
+      # Guarantees the profile exists (creating it on first use) before
+      # Firefox is asked to open it.
+      firefox-ytdlp-profile >/dev/null
+
+      # If that profile is already running, Firefox forwards this to the
+      # existing window as "open a new tab" instead of starting a second
+      # instance; otherwise it launches a fresh window. Backgrounded because
+      # a freshly launched (non-remoted) Firefox process does not return
+      # until the window is closed.
+      "$FIREFOX" -P "$PROFILE_NAME" "https://www.youtube.com" >/dev/null 2>&1 &
+      disown
+
+      read -r -n 1 -p "Confirm the 'ytdlp' Firefox profile is open to YouTube and logged in, then press y to continue (anything else aborts): " CONFIRM
+      echo
+      if [[ "$CONFIRM" != [yY] ]]; then
+        echo "wrapper-yt-dlp: aborted" >&2
+        exit 1
+      fi
+
+      FAILED=()
+      for i in "''${!URLS[@]}"; do
+        URL="''${URLS[$i]}"
+        echo "==> [$((i + 1))/''${#URLS[@]}] $URL"
+        if ! yt-dlp-cookies "$URL"; then
+          FAILED+=("$URL")
+        fi
+
+        if ((i < ''${#URLS[@]} - 1)); then
+          DELAY=$((RANDOM % (MAX - MIN + 1) + MIN))
+          echo "==> waiting ''${DELAY}s before next download..."
+          sleep "$DELAY"
+        fi
+      done
+
+      if ((''${#FAILED[@]} > 0)); then
+        echo "wrapper-yt-dlp: ''${#FAILED[@]} of ''${#URLS[@]} URL(s) failed:" >&2
+        printf '  %s\n' "''${FAILED[@]}" >&2
+        exit 1
+      fi
+    '';
+  };
+
   # This module forwards to Windows-side Firefox and is meaningless off WSL2.
   # Fail `home-manager switch` up front rather than deploying scripts that
   # would only break at first use — same rationale as assertWsl in ./wsl.nix.
