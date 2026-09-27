@@ -4,6 +4,7 @@
   imports = [
     ./modules/bash
     ./modules/dotfiles.nix
+    ./modules/firefox-ytdlp.nix
     ./modules/secrets.nix
     ./modules/wsl.nix
   ];
