@@ -25,6 +25,13 @@ try:
 except ImportError:
     HAS_RICH = False
 
+try:
+    from guessit import guessit
+
+    HAS_GUESSIT = True
+except ImportError:
+    HAS_GUESSIT = False
+
 
 # ---------------------------------------------------------------------------
 # ANSI helpers (used for non-table output regardless of rich availability)
@@ -234,6 +241,35 @@ def extract_title(stem: str) -> str:
     return s.strip(" .-_")
 
 
+def guess_with_guessit(name: str) -> tuple[str | None, str | None, str, str]:
+    """Return (title, year, episode, tail) as parsed by guessit; empty when unknown."""
+    if not HAS_GUESSIT:
+        return None, None, "", ""
+    g = guessit(name)
+
+    title = str(g["title"]) if g.get("title") else None
+    year = str(g["year"]) if g.get("year") else None
+
+    episode = ""
+    if g.get("type") == "episode":
+        season, eps = g.get("season"), g.get("episode")
+        if isinstance(season, list):
+            season = season[0]
+        if isinstance(eps, int):
+            episode = f" - s{season:02d}e{eps:02d}" if season is not None else ""
+        elif isinstance(eps, list) and eps and season is not None:
+            episode = f" - s{season:02d}e{eps[0]:02d}-e{eps[-1]:02d}"
+
+    tail = ""
+    if g.get("edition"):
+        edition = g["edition"]
+        if isinstance(edition, list):
+            edition = " ".join(edition)
+        tail = f" {{edition-{edition}}}"
+
+    return title, year, episode, tail
+
+
 def normalize_resolution(res: str) -> str:
     return "4k" if res.lower() in ("2160p", "4k") else res.lower()
 
@@ -289,14 +325,21 @@ def analyze_file(path: Path, verbose: bool = False) -> MediaFile:
     res_m = _RE_RES.search(stem)
     codec_m = _RE_CODEC.search(stem)
 
-    media.year = year_m.group(1) if year_m else None
     media.resolution = normalize_resolution(res_m.group(1)) if res_m else None
     media.codec = (
         CODEC_NORMALIZE.get(codec_m.group(1).lower(), codec_m.group(1).lower())
         if codec_m
         else None
     )
-    media.title = extract_title(stem) or None
+
+    # guessit is the primary source for title/year/episode/edition; the regexes
+    # are the fallback. An explicit " - sXXeYY - Name" or " {edition-X}" already
+    # in the filename is kept as-is, since guessit would drop the episode name.
+    g_title, g_year, g_episode, g_tail = guess_with_guessit(path.name)
+    media.title = g_title or extract_title(stem) or None
+    media.year = g_year or (year_m.group(1) if year_m else None)
+    media.episode = media.episode or g_episode
+    media.tail = media.tail or g_tail
 
     # Fill missing res/codec from ffprobe
     if not media.resolution or not media.codec:
