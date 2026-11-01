@@ -241,11 +241,18 @@ def extract_title(stem: str) -> str:
     return s.strip(" .-_")
 
 
-def guess_with_guessit(name: str) -> tuple[str | None, str | None, str, str]:
+def guess_with_guessit(
+    name: str, debug: bool = False
+) -> tuple[str | None, str | None, str, str]:
     """Return (title, year, episode, tail) as parsed by guessit; empty when unknown."""
     if not HAS_GUESSIT:
         return None, None, "", ""
     g = guessit(name)
+
+    if debug:
+        print(f"  {C.magenta('guessit: ' + name)}")
+        for key, value in g.items():
+            print(f"    {C.dim(key + ':')} {value!r}")
 
     title = str(g["title"]) if g.get("title") else None
     year = str(g["year"]) if g.get("year") else None
@@ -288,7 +295,7 @@ def folder_matches_title(path: Path, title: str) -> bool:
 # ---------------------------------------------------------------------------
 
 
-def analyze_file(path: Path, verbose: bool = False) -> MediaFile:
+def analyze_file(path: Path, verbose: bool = False, debug: bool = False) -> MediaFile:
     ext = path.suffix.lstrip(".").lower()
     stem = path.stem
     media = MediaFile(path=path, ext=ext)
@@ -335,7 +342,7 @@ def analyze_file(path: Path, verbose: bool = False) -> MediaFile:
     # guessit is the primary source for title/year/episode/edition; the regexes
     # are the fallback. An explicit " - sXXeYY - Name" or " {edition-X}" already
     # in the filename is kept as-is, since guessit would drop the episode name.
-    g_title, g_year, g_episode, g_tail = guess_with_guessit(path.name)
+    g_title, g_year, g_episode, g_tail = guess_with_guessit(path.name, debug)
     media.title = g_title or extract_title(stem) or None
     media.year = g_year or (year_m.group(1) if year_m else None)
     media.episode = media.episode or g_episode
@@ -530,14 +537,19 @@ def main() -> None:
         "root",
         nargs="?",
         default=".",
-        metavar="DIR",
-        help="Directory to search (default: current directory)",
+        metavar="PATH",
+        help="Directory to search, or a single .mkv/.mp4 file (default: current directory)",
     )
     parser.add_argument(
         "-v",
         "--verbose",
         action="store_true",
         help="Show every file found, including those being skipped",
+    )
+    parser.add_argument(
+        "--debug-guessit",
+        action="store_true",
+        help="Print everything guessit parsed from each filename that needs analysis",
     )
     args = parser.parse_args()
 
@@ -556,6 +568,16 @@ def main() -> None:
             print(C.red(f"Error: {e}"))
         sys.exit(1)
 
+    if not HAS_GUESSIT:
+        print(
+            C.bold(
+                C.yellow(
+                    "WARNING: guessit is not installed — falling back to regex-only "
+                    "parsing (titles, years, episodes and editions will be less accurate)."
+                )
+            )
+        )
+
     root = Path(args.root).resolve()
     if not root.exists():
         print(C.red(f"Error: '{root}' does not exist."))
@@ -572,9 +594,8 @@ def main() -> None:
     else:
         print(f"\n{C.bold(C.blue('Scanning:'))} {root}")
 
-    all_files = sorted(
-        p for p in root.rglob("*") if p.suffix.lower() in (".mkv", ".mp4")
-    )
+    candidates = [root] if root.is_file() else root.rglob("*")
+    all_files = sorted(p for p in candidates if p.suffix.lower() in (".mkv", ".mp4"))
     found_count = len(all_files)
 
     already_ok: list[MediaFile] = []
@@ -584,8 +605,8 @@ def main() -> None:
     term_w = console.width if HAS_RICH and console else 80
 
     for i, path in enumerate(all_files, 1):
-        if not args.verbose:
-            rel = str(path.relative_to(root))
+        if not (args.verbose or args.debug_guessit):
+            rel = str(path.relative_to(root if root.is_dir() else root.parent))
             label = f"  [{i}/{found_count}] "
             max_name = term_w - len(label)
             if len(rel) > max_name:
@@ -593,7 +614,7 @@ def main() -> None:
             sys.stdout.write(f"\r{label}{rel:<{max_name}}")
             sys.stdout.flush()
 
-        media = analyze_file(path, verbose=args.verbose)
+        media = analyze_file(path, verbose=args.verbose, debug=args.debug_guessit)
 
         if media.skip_reason:
             unresolvable.append(media)
@@ -611,7 +632,7 @@ def main() -> None:
         else:
             already_ok.append(media)
 
-    if not args.verbose:
+    if not (args.verbose or args.debug_guessit):
         sys.stdout.write(f"\r{' ' * term_w}\r")
         sys.stdout.flush()
 
