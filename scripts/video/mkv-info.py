@@ -2,10 +2,15 @@
 """
 Display detailed MKV track/container info from mkvmerge.
 Optionally compare two files side-by-side with -c/--compare.
+
+With --agent (or MKV_TOOLS_AGENT=1) emit a single JSON document on stdout with
+raw values (bytes, seconds, bits per second, real booleans) and no colour.
+Compare mode then lists differences as {scope, field, a, b} records.
 """
 
 import argparse
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -55,11 +60,36 @@ def yes_no(v: bool) -> str:
     return "Yes" if v else "No"
 
 
+def is_agent_mode(args: argparse.Namespace) -> bool:
+    env = os.environ.get("MKV_TOOLS_AGENT", "").strip().lower()
+    return args.agent or env in ("1", "true", "yes")
+
+
+def parse_dimensions(dims: str) -> tuple[int | None, int | None]:
+    try:
+        w, h = dims.split("x")
+        return int(w), int(h)
+    except ValueError:
+        return None, None
+
+
+def fmt_dimensions(w: int | None, h: int | None) -> str:
+    return f"{w}x{h}" if w and h else ""
+
+
 # ---------------------------------------------------------------------------
 # mkvmerge invocation
 # ---------------------------------------------------------------------------
 
-def run_mkvmerge(path: Path) -> dict:
+def fail(msg: str, agent: bool, path: Path | None = None) -> None:
+    """Report an error on stderr (plus a JSON error record in agent mode) and exit 1."""
+    print(msg, file=sys.stderr)
+    if agent:
+        print(json.dumps({"path": str(path) if path else None, "error": msg}, ensure_ascii=False))
+    sys.exit(1)
+
+
+def run_mkvmerge(path: Path, agent: bool = False) -> dict:
     try:
         r = subprocess.run(
             ["mkvmerge", "-J", str(path)],
@@ -67,90 +97,144 @@ def run_mkvmerge(path: Path) -> dict:
         )
         data = json.loads(r.stdout)
     except FileNotFoundError:
-        print("Error: mkvmerge not found. Install mkvtoolnix.", file=sys.stderr)
-        sys.exit(1)
+        fail("Error: mkvmerge not found. Install mkvtoolnix.", agent, path)
     except json.JSONDecodeError as e:
-        print(f"Error parsing mkvmerge output: {e}", file=sys.stderr)
-        sys.exit(1)
+        fail(f"Error parsing mkvmerge output: {e}", agent, path)
 
     if data.get("errors"):
-        for err in data["errors"]:
-            print(f"mkvmerge error: {err.strip()}", file=sys.stderr)
-        sys.exit(1)
+        fail("; ".join(f"mkvmerge error: {err.strip()}" for err in data["errors"]), agent, path)
 
     return data
 
 
 # ---------------------------------------------------------------------------
-# Data extraction
+# Data extraction (raw values; the extract_* wrappers format them for humans)
 # ---------------------------------------------------------------------------
 
-def extract_container(data: dict) -> dict:
+def raw_container(data: dict) -> dict:
     props = data.get("container", {}).get("properties", {})
     file_path = Path(data.get("file_name", ""))
     size = file_path.stat().st_size if file_path.exists() else None
 
     duration_ns = props.get("duration")
     return {
-        "File":         file_path.name,
-        "Size":         fmt_bytes(size) if size is not None else "—",
-        "Format":       data.get("container", {}).get("type", "—"),
-        "Duration":     ns_to_hms(duration_ns) if duration_ns else "—",
-        "Title":        props.get("title", "—"),
-        "Date":         props.get("date_local", props.get("date_utc", "—")),
-        "Muxer":        props.get("muxing_application", "—"),
-        "Written by":   props.get("writing_application", "—"),
-        "Segment UID":  props.get("segment_uid", "—"),
-        "Chapters":     str(sum(c.get("num_entries", 0) for c in data.get("chapters", []))),
-        "Attachments":  str(len(data.get("attachments", []))),
+        "path":         str(file_path.resolve()),
+        "file":         file_path.name,
+        "size_bytes":   size,
+        "format":       data.get("container", {}).get("type"),
+        "duration_s":   round(duration_ns / 1_000_000_000, 3) if duration_ns else None,
+        "title":        props.get("title"),
+        "date":         props.get("date_local", props.get("date_utc")),
+        "muxer":        props.get("muxing_application"),
+        "written_by":   props.get("writing_application"),
+        "segment_uid":  props.get("segment_uid"),
+        "chapters":     sum(c.get("num_entries", 0) for c in data.get("chapters", [])),
+        "attachments":  len(data.get("attachments", [])),
+    }
+
+
+def raw_tracks(data: dict) -> list[dict]:
+    tracks = []
+    for t in data.get("tracks", []):
+        p = t.get("properties", {})
+
+        bps = p.get("tag_bps")
+        track = {
+            "id":          t["id"],
+            "type":        t["type"],
+            "codec":       t.get("codec"),
+            "language":    p.get("language"),
+            "name":        p.get("track_name"),
+            "default":     p.get("default_track", False),
+            "forced":      p.get("forced_track", False),
+            "enabled":     p.get("enabled_track", True),
+            "bitrate_bps": int(bps) if bps and bps.isdigit() else None,
+        }
+
+        if t["type"] == "audio":
+            track["channels"]        = p.get("audio_channels")
+            track["sampling_hz"]     = p.get("audio_sampling_frequency")
+            track["bits_per_sample"] = p.get("audio_bits_per_sample")
+
+        if t["type"] == "video":
+            width, height = parse_dimensions(p.get("pixel_dimensions", ""))
+            disp_w, disp_h = parse_dimensions(p.get("display_dimensions", ""))
+            dur = p.get("default_duration")
+            track["width"]          = width
+            track["height"]         = height
+            track["display_width"]  = disp_w
+            track["display_height"] = disp_h
+            track["fps"]            = round(1_000_000_000 / dur, 3) if dur else None
+
+        tracks.append(track)
+    return tracks
+
+
+def raw_attachments(data: dict) -> list[dict]:
+    return [
+        {
+            "name":         a.get("file_name"),
+            "content_type": a.get("content_type"),
+            "size_bytes":   a.get("size", 0),
+        }
+        for a in data.get("attachments", [])
+    ]
+
+
+def extract_container(data: dict) -> dict:
+    c = raw_container(data)
+    dash = lambda v: "—" if v is None else v
+    return {
+        "File":         c["file"],
+        "Size":         fmt_bytes(c["size_bytes"]) if c["size_bytes"] is not None else "—",
+        "Format":       dash(c["format"]),
+        "Duration":     ns_to_hms(round(c["duration_s"] * 1_000_000_000)) if c["duration_s"] else "—",
+        "Title":        dash(c["title"]),
+        "Date":         dash(c["date"]),
+        "Muxer":        dash(c["muxer"]),
+        "Written by":   dash(c["written_by"]),
+        "Segment UID":  dash(c["segment_uid"]),
+        "Chapters":     str(c["chapters"]),
+        "Attachments":  str(c["attachments"]),
     }
 
 
 def extract_tracks(data: dict) -> list[dict]:
     tracks = []
-    for t in data.get("tracks", []):
-        p = t.get("properties", {})
-
+    for t in raw_tracks(data):
         # Build a clean display of audio properties
         audio_info = ""
         if t["type"] == "audio":
-            ch = p.get("audio_channels")
-            hz = p.get("audio_sampling_frequency")
-            bits = p.get("audio_bits_per_sample")
             parts = []
-            if ch:
-                parts.append(f"{ch}ch")
-            if hz:
-                parts.append(f"{hz // 1000}kHz")
-            if bits:
-                parts.append(f"{bits}-bit")
+            if t["channels"]:
+                parts.append(f"{t['channels']}ch")
+            if t["sampling_hz"]:
+                parts.append(f"{t['sampling_hz'] // 1000}kHz")
+            if t["bits_per_sample"]:
+                parts.append(f"{t['bits_per_sample']}-bit")
             audio_info = " / ".join(parts)
 
         video_info = ""
         if t["type"] == "video":
-            dims = p.get("pixel_dimensions", "")
-            disp = p.get("display_dimensions", "")
-            dur  = p.get("default_duration")
-            fps  = f"{1_000_000_000 / dur:.3f}fps" if dur else ""
+            dims = fmt_dimensions(t["width"], t["height"])
+            disp = fmt_dimensions(t["display_width"], t["display_height"])
+            fps  = f"{t['fps']:.3f}fps" if t["fps"] else ""
             video_info = dims
             if disp and disp != dims:
                 video_info += f" (display: {disp})"
             if fps:
                 video_info += f"  {fps}"
 
-        bps = p.get("tag_bps")
-        bitrate = fmt_bps(int(bps)) if bps and bps.isdigit() else "—"
-
         tracks.append({
             "id":       str(t["id"]),
             "type":     t["type"].capitalize(),
-            "codec":    t.get("codec", "—"),
-            "language": p.get("language", "—"),
-            "name":     p.get("track_name", ""),
-            "default":  yes_no(p.get("default_track", False)),
-            "forced":   yes_no(p.get("forced_track", False)),
-            "enabled":  yes_no(p.get("enabled_track", True)),
-            "bitrate":  bitrate,
+            "codec":    t["codec"] or "—",
+            "language": t["language"] or "—",
+            "name":     t["name"] or "",
+            "default":  yes_no(t["default"]),
+            "forced":   yes_no(t["forced"]),
+            "enabled":  yes_no(t["enabled"]),
+            "bitrate":  fmt_bps(t["bitrate_bps"]) if t["bitrate_bps"] is not None else "—",
             "detail":   audio_info or video_info,
         })
     return tracks
@@ -159,12 +243,71 @@ def extract_tracks(data: dict) -> list[dict]:
 def extract_attachments(data: dict) -> list[dict]:
     return [
         {
-            "name":     a.get("file_name", "—"),
-            "type":     a.get("content_type", "—"),
-            "size":     fmt_bytes(a.get("size", 0)),
+            "name":     a["name"] or "—",
+            "type":     a["content_type"] or "—",
+            "size":     fmt_bytes(a["size_bytes"]),
         }
-        for a in data.get("attachments", [])
+        for a in raw_attachments(data)
     ]
+
+
+# ---------------------------------------------------------------------------
+# Agent (JSON) output
+# ---------------------------------------------------------------------------
+
+def agent_single(data: dict) -> dict:
+    return {
+        "container":   raw_container(data),
+        "tracks":      raw_tracks(data),
+        "attachments": raw_attachments(data),
+    }
+
+
+def agent_compare(data_a: dict, data_b: dict, verbose: bool = False) -> dict:
+    """Field-by-field comparison as {scope, field, a, b, match} records.
+
+    Mismatches only, unless *verbose*. "identical" is computed over all fields.
+    """
+    records: list[dict] = []
+
+    def add(scope: str, field: str, a, b) -> None:
+        records.append({"scope": scope, "field": field, "a": a, "b": b, "match": a == b})
+
+    ca, cb = raw_container(data_a), raw_container(data_b)
+    for key in ca:
+        if key in ("path", "file"):
+            continue
+        add("container", key, ca[key], cb[key])
+
+    ta, tb = raw_tracks(data_a), raw_tracks(data_b)
+    for ttype in ("video", "audio", "subtitles"):
+        ga = [t for t in ta if t["type"] == ttype]
+        gb = [t for t in tb if t["type"] == ttype]
+        if not ga and not gb:
+            continue
+        if len(ga) != len(gb):
+            add(ttype, "count", len(ga), len(gb))
+        for i in range(max(len(ga), len(gb))):
+            x = ga[i] if i < len(ga) else {}
+            y = gb[i] if i < len(gb) else {}
+            for field in [k for k in {**x, **y} if k not in ("id", "type")]:
+                add(f"{ttype}[{i}]", field, x.get(field), y.get(field))
+
+    aa, ab = raw_attachments(data_a), raw_attachments(data_b)
+    if len(aa) != len(ab):
+        add("attachments", "count", len(aa), len(ab))
+    for i in range(max(len(aa), len(ab))):
+        x = aa[i] if i < len(aa) else {}
+        y = ab[i] if i < len(ab) else {}
+        for field in ("name", "content_type", "size_bytes"):
+            add(f"attachments[{i}]", field, x.get(field), y.get(field))
+
+    return {
+        "a":         ca["path"],
+        "b":         cb["path"],
+        "identical": all(r["match"] for r in records),
+        "fields":    records if verbose else [r for r in records if not r["match"]],
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -457,20 +600,31 @@ def main() -> None:
         "-v", "--verbose", action="store_true",
         help="In compare mode, show all fields including matching ones",
     )
+    parser.add_argument(
+        "--agent", "--json", action="store_true", dest="agent",
+        help="Machine-readable output: one JSON document with raw values, no "
+             "colour (also enabled by MKV_TOOLS_AGENT=1)",
+    )
     args = parser.parse_args()
+
+    agent = is_agent_mode(args)
 
     path_a = Path(args.file)
     if not path_a.exists():
-        print(f"Error: '{path_a}' does not exist.", file=sys.stderr)
-        sys.exit(1)
+        fail(f"Error: '{path_a}' does not exist.", agent, path_a)
 
-    console = Console() if HAS_RICH else None
+    console = Console() if HAS_RICH and not agent else None
 
     if args.compare:
         path_b = Path(args.compare)
         if not path_b.exists():
-            print(f"Error: '{path_b}' does not exist.", file=sys.stderr)
-            sys.exit(1)
+            fail(f"Error: '{path_b}' does not exist.", agent, path_b)
+
+        if agent:
+            data_a = run_mkvmerge(path_a, agent)
+            data_b = run_mkvmerge(path_b, agent)
+            print(json.dumps(agent_compare(data_a, data_b, verbose=args.verbose), ensure_ascii=False))
+            return
 
         if HAS_RICH:
             console.print(f"\n[bold]Comparing:[/bold]")
@@ -484,6 +638,10 @@ def main() -> None:
         display_compare(data_a, data_b, console, verbose=args.verbose)
 
     else:
+        if agent:
+            print(json.dumps(agent_single(run_mkvmerge(path_a, agent)), ensure_ascii=False))
+            return
+
         if HAS_RICH:
             console.print(f"\n[bold cyan]{path_a.name}[/bold cyan]\n")
         else:

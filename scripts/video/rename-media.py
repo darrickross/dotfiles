@@ -25,6 +25,13 @@ try:
 except ImportError:
     HAS_RICH = False
 
+try:
+    from guessit import guessit
+
+    HAS_GUESSIT = True
+except ImportError:
+    HAS_GUESSIT = False
+
 
 # ---------------------------------------------------------------------------
 # ANSI helpers (used for non-table output regardless of rich availability)
@@ -234,6 +241,42 @@ def extract_title(stem: str) -> str:
     return s.strip(" .-_")
 
 
+def guess_with_guessit(
+    name: str, debug: bool = False
+) -> tuple[str | None, str | None, str, str]:
+    """Return (title, year, episode, tail) as parsed by guessit; empty when unknown."""
+    if not HAS_GUESSIT:
+        return None, None, "", ""
+    g = guessit(name)
+
+    if debug:
+        print(f"  {C.magenta('guessit: ' + name)}")
+        for key, value in g.items():
+            print(f"    {C.dim(key + ':')} {value!r}")
+
+    title = str(g["title"]) if g.get("title") else None
+    year = str(g["year"]) if g.get("year") else None
+
+    episode = ""
+    if g.get("type") == "episode":
+        season, eps = g.get("season"), g.get("episode")
+        if isinstance(season, list):
+            season = season[0]
+        if isinstance(eps, int):
+            episode = f" - s{season:02d}e{eps:02d}" if season is not None else ""
+        elif isinstance(eps, list) and eps and season is not None:
+            episode = f" - s{season:02d}e{eps[0]:02d}-e{eps[-1]:02d}"
+
+    tail = ""
+    if g.get("edition"):
+        edition = g["edition"]
+        if isinstance(edition, list):
+            edition = " ".join(edition)
+        tail = f" {{edition-{edition}}}"
+
+    return title, year, episode, tail
+
+
 def normalize_resolution(res: str) -> str:
     return "4k" if res.lower() in ("2160p", "4k") else res.lower()
 
@@ -252,7 +295,7 @@ def folder_matches_title(path: Path, title: str) -> bool:
 # ---------------------------------------------------------------------------
 
 
-def analyze_file(path: Path, verbose: bool = False) -> MediaFile:
+def analyze_file(path: Path, verbose: bool = False, debug: bool = False) -> MediaFile:
     ext = path.suffix.lstrip(".").lower()
     stem = path.stem
     media = MediaFile(path=path, ext=ext)
@@ -289,14 +332,21 @@ def analyze_file(path: Path, verbose: bool = False) -> MediaFile:
     res_m = _RE_RES.search(stem)
     codec_m = _RE_CODEC.search(stem)
 
-    media.year = year_m.group(1) if year_m else None
     media.resolution = normalize_resolution(res_m.group(1)) if res_m else None
     media.codec = (
         CODEC_NORMALIZE.get(codec_m.group(1).lower(), codec_m.group(1).lower())
         if codec_m
         else None
     )
-    media.title = extract_title(stem) or None
+
+    # guessit is the primary source for title/year/episode/edition; the regexes
+    # are the fallback. An explicit " - sXXeYY - Name" or " {edition-X}" already
+    # in the filename is kept as-is, since guessit would drop the episode name.
+    g_title, g_year, g_episode, g_tail = guess_with_guessit(path.name, debug)
+    media.title = g_title or extract_title(stem) or None
+    media.year = g_year or (year_m.group(1) if year_m else None)
+    media.episode = media.episode or g_episode
+    media.tail = media.tail or g_tail
 
     # Fill missing res/codec from ffprobe
     if not media.resolution or not media.codec:
@@ -487,14 +537,19 @@ def main() -> None:
         "root",
         nargs="?",
         default=".",
-        metavar="DIR",
-        help="Directory to search (default: current directory)",
+        metavar="PATH",
+        help="Directory to search, or a single .mkv/.mp4 file (default: current directory)",
     )
     parser.add_argument(
         "-v",
         "--verbose",
         action="store_true",
         help="Show every file found, including those being skipped",
+    )
+    parser.add_argument(
+        "--debug-guessit",
+        action="store_true",
+        help="Print everything guessit parsed from each filename that needs analysis",
     )
     args = parser.parse_args()
 
@@ -513,6 +568,16 @@ def main() -> None:
             print(C.red(f"Error: {e}"))
         sys.exit(1)
 
+    if not HAS_GUESSIT:
+        print(
+            C.bold(
+                C.yellow(
+                    "WARNING: guessit is not installed — falling back to regex-only "
+                    "parsing (titles, years, episodes and editions will be less accurate)."
+                )
+            )
+        )
+
     root = Path(args.root).resolve()
     if not root.exists():
         print(C.red(f"Error: '{root}' does not exist."))
@@ -529,9 +594,8 @@ def main() -> None:
     else:
         print(f"\n{C.bold(C.blue('Scanning:'))} {root}")
 
-    all_files = sorted(
-        p for p in root.rglob("*") if p.suffix.lower() in (".mkv", ".mp4")
-    )
+    candidates = [root] if root.is_file() else root.rglob("*")
+    all_files = sorted(p for p in candidates if p.suffix.lower() in (".mkv", ".mp4"))
     found_count = len(all_files)
 
     already_ok: list[MediaFile] = []
@@ -541,8 +605,8 @@ def main() -> None:
     term_w = console.width if HAS_RICH and console else 80
 
     for i, path in enumerate(all_files, 1):
-        if not args.verbose:
-            rel = str(path.relative_to(root))
+        if not (args.verbose or args.debug_guessit):
+            rel = str(path.relative_to(root if root.is_dir() else root.parent))
             label = f"  [{i}/{found_count}] "
             max_name = term_w - len(label)
             if len(rel) > max_name:
@@ -550,7 +614,7 @@ def main() -> None:
             sys.stdout.write(f"\r{label}{rel:<{max_name}}")
             sys.stdout.flush()
 
-        media = analyze_file(path, verbose=args.verbose)
+        media = analyze_file(path, verbose=args.verbose, debug=args.debug_guessit)
 
         if media.skip_reason:
             unresolvable.append(media)
@@ -568,7 +632,7 @@ def main() -> None:
         else:
             already_ok.append(media)
 
-    if not args.verbose:
+    if not (args.verbose or args.debug_guessit):
         sys.stdout.write(f"\r{' ' * term_w}\r")
         sys.stdout.flush()
 

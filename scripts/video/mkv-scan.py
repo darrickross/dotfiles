@@ -2,10 +2,16 @@
 """
 Scan a folder for .mkv files and display a summary table:
   filename, size, duration, chapters, video resolution, audio track count, subtitle count.
+
+With --agent (or MKV_TOOLS_AGENT=1) emit JSON Lines instead: one object per
+file with raw numeric values and per-track detail, sorted by path, with no
+progress line, banner or colour. Files that cannot be read are emitted as
+{"path": ..., "relative_path": ..., "error": ...} and the exit code is 1.
 """
 
 import argparse
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -43,6 +49,11 @@ def fmt_bytes(b: int) -> str:
     return f"{b:.1f} PB"
 
 
+def is_agent_mode(args: argparse.Namespace) -> bool:
+    env = os.environ.get("MKV_TOOLS_AGENT", "").strip().lower()
+    return args.agent or env in ("1", "true", "yes")
+
+
 # ---------------------------------------------------------------------------
 # mkvmerge invocation
 # ---------------------------------------------------------------------------
@@ -66,11 +77,19 @@ def run_mkvmerge(path: Path) -> dict | None:
 
 
 # ---------------------------------------------------------------------------
-# Per-file extraction
+# Per-file extraction (raw values; formatting happens at display time)
 # ---------------------------------------------------------------------------
 
 
-def extract_row(path: Path, data: dict) -> dict:
+def parse_dimensions(dims: str) -> tuple[int | None, int | None]:
+    try:
+        w, h = dims.split("x")
+        return int(w), int(h)
+    except ValueError:
+        return None, None
+
+
+def extract_row(path: Path, root: Path, data: dict) -> dict:
     props = data.get("container", {}).get("properties", {})
 
     size = path.stat().st_size if path.exists() else None
@@ -84,24 +103,73 @@ def extract_row(path: Path, data: dict) -> dict:
     sub_tracks   = [t for t in tracks if t["type"] == "subtitles"]
 
     # Resolution from first video track
-    video_info = "—"
+    video = None
     if video_tracks:
         vp = video_tracks[0].get("properties", {})
-        dims = vp.get("pixel_dimensions", "")
-        codec = video_tracks[0].get("codec", "")
+        width, height = parse_dimensions(vp.get("pixel_dimensions", ""))
         dur_ns = vp.get("default_duration")
-        fps = f" @ {1_000_000_000 / dur_ns:.3f}fps" if dur_ns else ""
-        parts = [p for p in [dims, codec] if p]
+        video = {
+            "width":  width,
+            "height": height,
+            "codec":  video_tracks[0].get("codec"),
+            "fps":    round(1_000_000_000 / dur_ns, 3) if dur_ns else None,
+        }
+
+    audio = []
+    for t in audio_tracks:
+        p = t.get("properties", {})
+        audio.append({
+            "id":       t["id"],
+            "codec":    t.get("codec"),
+            "language": p.get("language"),
+            "name":     p.get("track_name"),
+            "channels": p.get("audio_channels"),
+            "default":  p.get("default_track", False),
+        })
+
+    subtitles = []
+    for t in sub_tracks:
+        p = t.get("properties", {})
+        subtitles.append({
+            "id":       t["id"],
+            "codec":    t.get("codec"),
+            "language": p.get("language"),
+            "name":     p.get("track_name"),
+            "default":  p.get("default_track", False),
+            "forced":   p.get("forced_track", False),
+        })
+
+    return {
+        "path":          str(path),
+        "relative_path": str(path.relative_to(root)),
+        "name":          path.name,
+        "size_bytes":    size,
+        "duration_s":    round(duration_ns / 1_000_000_000, 3) if duration_ns else None,
+        "chapters":      chapters,
+        "video":         video,
+        "audio":         audio,
+        "subtitles":     subtitles,
+    }
+
+
+def format_row(r: dict) -> dict:
+    """Raw row → display strings for the human table."""
+    video_info = "—"
+    v = r["video"]
+    if v:
+        dims = f"{v['width']}x{v['height']}" if v["width"] and v["height"] else ""
+        parts = [p for p in [dims, v["codec"]] if p]
+        fps = f" @ {v['fps']:.3f}fps" if v["fps"] else ""
         video_info = "  ".join(parts) + fps if parts else "—"
 
     return {
-        "name":      path.name,
-        "size":      fmt_bytes(size) if size is not None else "—",
-        "duration":  ns_to_hms(duration_ns) if duration_ns else "—",
-        "chapters":  str(chapters) if chapters else "0",
-        "video":     video_info,
-        "audio":     str(len(audio_tracks)),
-        "subs":      str(len(sub_tracks)),
+        "name":     r["name"],
+        "size":     fmt_bytes(r["size_bytes"]) if r["size_bytes"] is not None else "—",
+        "duration": ns_to_hms(round(r["duration_s"] * 1_000_000_000)) if r["duration_s"] else "—",
+        "chapters": str(r["chapters"]),
+        "video":    video_info,
+        "audio":    str(len(r["audio"])),
+        "subs":     str(len(r["subtitles"])),
     }
 
 
@@ -186,9 +254,26 @@ def main() -> None:
         "-s", "--sort",
         choices=["name", "size", "duration"],
         default="name",
-        help="Sort order (default: name)",
+        help="Sort order (default: name). Ignored with --agent, which sorts by path",
+    )
+    parser.add_argument(
+        "--min-duration", type=float, metavar="MIN",
+        help="Only include files at least MIN minutes long",
+    )
+    parser.add_argument(
+        "--max-duration", type=float, metavar="MIN",
+        help="Only include files at most MIN minutes long",
+    )
+    parser.add_argument(
+        "--agent", "--json", action="store_true", dest="agent",
+        help="Machine-readable output: JSON Lines with raw values, no progress "
+             "or colour (also enabled by MKV_TOOLS_AGENT=1)",
     )
     args = parser.parse_args()
+
+    agent = is_agent_mode(args)
+    # Progress line and banner are for a person watching a terminal.
+    interactive = not agent and sys.stdout.isatty()
 
     root = Path(args.folder).resolve()
     if not root.exists():
@@ -198,89 +283,129 @@ def main() -> None:
         print(f"Error: '{root}' is not a directory.", file=sys.stderr)
         sys.exit(1)
 
-    console = Console() if HAS_RICH else None
+    console = Console() if HAS_RICH and not agent else None
 
     glob_fn = root.rglob if args.recursive else root.glob
     mkv_files = sorted(p for p in glob_fn("*.mkv") if p.is_file())
 
     if not mkv_files:
         msg = f"No .mkv files found in '{root}'."
+        if agent:
+            print(msg, file=sys.stderr)
+        elif HAS_RICH:
+            console.print(f"[yellow]{msg}[/yellow]")
+        else:
+            print(msg)
+        return
+
+    if not agent:
+        if HAS_RICH:
+            console.print(f"\n[bold blue]Scanning:[/bold blue] {root}")
+        else:
+            print(f"\nScanning: {root}")
+
+    term_w = console.width if console else 80
+    rows: list[dict] = []
+    errors: list[dict] = []
+    total = len(mkv_files)
+
+    for i, path in enumerate(mkv_files, 1):
+        rel = str(path.relative_to(root))
+
+        if interactive:
+            label = f"  [{i}/{total}] "
+            max_name = term_w - len(label) - 1
+            display = rel if len(rel) <= max_name else "…" + rel[-(max_name - 1):]
+            sys.stdout.write(f"\r{label}{display:<{max_name}}")
+            sys.stdout.flush()
+
+        data = run_mkvmerge(path)
+        if data is None:
+            reason = "failed to parse mkvmerge output"
+        elif data.get("errors"):
+            reason = "; ".join(data["errors"])
+        else:
+            rows.append(extract_row(path, root, data))
+            continue
+        errors.append({"path": str(path), "relative_path": rel, "name": path.name, "error": reason})
+
+    # Clear progress line
+    if interactive:
+        sys.stdout.write(f"\r{' ' * term_w}\r")
+        sys.stdout.flush()
+
+    # Duration filters (minutes). Files with no duration can't satisfy either bound.
+    if args.min_duration is not None or args.max_duration is not None:
+        def in_range(r: dict) -> bool:
+            d = r["duration_s"]
+            if d is None:
+                return False
+            if args.min_duration is not None and d < args.min_duration * 60:
+                return False
+            if args.max_duration is not None and d > args.max_duration * 60:
+                return False
+            return True
+
+        rows = [r for r in rows if in_range(r)]
+
+    # Agent mode: raw JSON Lines, sorted by path for stable diffs.
+    if agent:
+        records = sorted(rows + errors, key=lambda r: r["relative_path"])
+        for rec in records:
+            rec = {k: v for k, v in rec.items() if k != "name"}
+            print(json.dumps(rec, ensure_ascii=False))
+        if not records:
+            print("No files match the duration filter.", file=sys.stderr)
+        sys.exit(1 if errors else 0)
+
+    if not rows and errors:
+        msg = "Could not read metadata from any file."
+        if HAS_RICH:
+            console.print(f"[red]{msg}[/red]")
+        else:
+            print(msg)
+        for e in errors:
+            print(f"  {e['name']}: {e['error']}", file=sys.stderr)
+        sys.exit(1)
+
+    if not rows:
+        msg = "No files match the duration filter."
         if HAS_RICH:
             console.print(f"[yellow]{msg}[/yellow]")
         else:
             print(msg)
         return
 
-    if HAS_RICH:
-        console.print(f"\n[bold blue]Scanning:[/bold blue] {root}")
-    else:
-        print(f"\nScanning: {root}")
-
-    term_w = console.width if HAS_RICH and console else 80
-    rows: list[dict] = []
-    errors: list[tuple[Path, str]] = []
-    total = len(mkv_files)
-
-    for i, path in enumerate(mkv_files, 1):
-        rel = str(path.relative_to(root))
-        label = f"  [{i}/{total}] "
-        max_name = term_w - len(label) - 1
-        display = rel if len(rel) <= max_name else "\u2026" + rel[-(max_name - 1):]
-        sys.stdout.write(f"\r{label}{display:<{max_name}}")
-        sys.stdout.flush()
-
-        data = run_mkvmerge(path)
-        if data is None:
-            errors.append((path, "failed to parse mkvmerge output"))
-            continue
-        if data.get("errors"):
-            errors.append((path, "; ".join(data["errors"])))
-            continue
-
-        rows.append(extract_row(path, data))
-
-    # Clear progress line
-    sys.stdout.write(f"\r{' ' * term_w}\r")
-    sys.stdout.flush()
-
-    if not rows:
-        msg = "Could not read metadata from any file."
-        if HAS_RICH:
-            console.print(f"[red]{msg}[/red]")
-        else:
-            print(msg)
-        if errors:
-            for p, reason in errors:
-                print(f"  {p.name}: {reason}", file=sys.stderr)
-        return
-
-    # Sort
+    # Sort on raw values so size and duration order numerically.
     SORT_KEY = {
         "name":     lambda r: r["name"].lower(),
-        "size":     lambda r: r["name"].lower(),   # size already formatted; sort by name fallback
-        "duration": lambda r: r["duration"],
+        "size":     lambda r: (r["size_bytes"] or 0, r["relative_path"]),
+        "duration": lambda r: (r["duration_s"] or 0, r["relative_path"]),
     }
     rows.sort(key=SORT_KEY[args.sort])
+    display_rows = [format_row(r) for r in rows]
 
     # Header
+    count = len(display_rows)
     if HAS_RICH:
-        console.print(Rule(f"[bold cyan]{total} MKV file{'s' if total != 1 else ''}[/bold cyan]"))
-        console.print(make_rich_table(rows, console))
+        console.print(Rule(f"[bold cyan]{count} MKV file{'s' if count != 1 else ''}[/bold cyan]"))
+        console.print(make_rich_table(display_rows, console))
     else:
-        print(f"\n{total} MKV file{'s' if total != 1 else ''}:\n")
-        print_plain_table(rows)
+        print(f"\n{count} MKV file{'s' if count != 1 else ''}:\n")
+        print_plain_table(display_rows)
         print()
 
     # Errors
     if errors:
         if HAS_RICH:
             console.print(f"\n[red]Errors ({len(errors)}):[/red]")
-            for p, reason in errors:
-                console.print(f"  [red dim]• {p.name}: {reason}[/red dim]")
+            for e in errors:
+                console.print(f"  [red dim]• {e['name']}: {e['error']}[/red dim]")
         else:
             print(f"\nErrors ({len(errors)}):")
-            for p, reason in errors:
-                print(f"  • {p.name}: {reason}")
+            for e in errors:
+                print(f"  • {e['name']}: {e['error']}")
+        sys.exit(1)
 
 
 if __name__ == "__main__":
