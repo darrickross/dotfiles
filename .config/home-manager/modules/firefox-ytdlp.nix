@@ -154,6 +154,31 @@ in
     '';
   };
 
+  # Opens the ytdlp profile to YouTube so you can log in or refresh the
+  # session. Creates the profile first if it does not exist. Close the window
+  # afterwards so yt-dlp-cookies can read a fully flushed cookies.sqlite.
+  home.file.".local/bin/yt-dlp-cookies-startup" = {
+    executable = true;
+    force = true;
+    text = ''
+      #!/usr/bin/env bash
+      set -euo pipefail
+
+      FIREFOX="${firefoxWin}"
+      PROFILE_NAME="${profileName}"
+
+      # Guarantees the profile exists (creating it on first use).
+      firefox-ytdlp-profile >/dev/null
+
+      # Backgrounded: a freshly launched Firefox does not return until its
+      # window closes. If the profile is already running, this opens a new tab.
+      "$FIREFOX" -P "$PROFILE_NAME" "https://www.youtube.com" >/dev/null 2>&1 &
+      disown
+
+      echo "Opened the '$PROFILE_NAME' Firefox profile. Close it when done so cookies are flushed to disk."
+    '';
+  };
+
   # Batch downloader: opens the ytdlp profile to YouTube, waits for a human
   # to confirm it is logged in, then runs yt-dlp-cookies once per URL with a
   # randomized delay between downloads (avoids firing requests back-to-back).
