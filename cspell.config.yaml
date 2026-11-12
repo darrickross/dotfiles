@@ -1,6 +1,3 @@
-# cspell word list for this repo — read by both the cspell CLI and the
-# VS Code "Code Spell Checker" extension. Maintained by
-# scripts/cspell/import-vscode-words.py (dedupes + sorts on every run).
 version: "0.2"
 words:
   - analyzeduration
@@ -109,6 +106,7 @@ words:
   - signingkey
   - stylesheet
   - svgns
+  - tesseract
   - timonwong
   - toplevel
   - ufeff
