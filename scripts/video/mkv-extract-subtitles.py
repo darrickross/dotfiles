@@ -9,13 +9,13 @@ Pipeline per file:
   built-in PGS parser  decode each subtitle bitmap (no Pillow needed)
   tesseract            OCR each bitmap
 
-Output goes to --out-dir (default ./mkv-subs), NOT next to the video, so Plex
+Output goes to --out-dir (default ./mkv-extract-subtitles), NOT next to the video, so Plex
 never picks the OCR'd files up as external subtitles. For a directory input the
 relative folder layout is mirrored under --out-dir.
 
-  mkv-subs.py episode.mkv --first-minutes 5
-  mkv-subs.py "Season 07/" --first-minutes 5 --out-dir /tmp/subs
-  mkv-subs.py "Season 07/" --agent        # JSON Lines summary on stdout
+  mkv-extract-subtitles.py episode.mkv --first-minutes 5
+  mkv-extract-subtitles.py "Season 07/" --first-minutes 5 --out-dir /tmp/subs
+  mkv-extract-subtitles.py "Season 07/" --agent        # JSON Lines summary on stdout
 
 Only HDMV PGS tracks are supported (DVD VobSub and text tracks are reported
 as errors). Requires mkvmerge, ffmpeg and tesseract on PATH.
@@ -352,7 +352,7 @@ def process(path: Path, rel: Path, args: argparse.Namespace) -> dict:
     if "PGS" not in codec:
         raise RuntimeError(f"unsupported subtitle codec '{codec}' (only HDMV PGS)")
 
-    with tempfile.TemporaryDirectory(prefix="mkv-subs-") as tmp:
+    with tempfile.TemporaryDirectory(prefix="mkv-extract-subtitles-") as tmp:
         sup = Path(tmp) / "track.sup"
         extract_sup(path, ordinal, sup, args.first_minutes)
         events = parse_pgs(sup.read_bytes())
@@ -377,7 +377,7 @@ def main() -> int:
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     ap.add_argument("paths", nargs="+", type=Path, help=".mkv files or folders (recursive)")
-    ap.add_argument("--out-dir", type=Path, default=Path("mkv-subs"), help="where transcripts go")
+    ap.add_argument("--out-dir", type=Path, default=Path("mkv-extract-subtitles"), help="where transcripts go")
     ap.add_argument("--format", choices=("txt", "srt"), default="txt", help="txt = '[H:MM:SS.mmm] line'")
     ap.add_argument("--first-minutes", type=float, default=None, help="only the first N minutes (fast; enough to identify an episode)")
     ap.add_argument("--lang", default="eng", help="subtitle track language to select (mkv language code)")

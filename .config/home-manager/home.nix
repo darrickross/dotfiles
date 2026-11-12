@@ -217,6 +217,7 @@
     rename-media = ''python3 "$(dotfiles-root)/scripts/video/rename-media.py"'';
     mkv-info = ''python3 "$(dotfiles-root)/scripts/video/mkv-info.py"'';
     mkv-scan = ''python3 "$(dotfiles-root)/scripts/video/mkv-scan.py"'';
+    mkv-extract-subtitles = ''python3 "$(dotfiles-root)/scripts/video/mkv-extract-subtitles.py"'';
     wifi-qr = ''python3 "$(dotfiles-root)/scripts/qr-codes/generate.py"'';
   };
 
